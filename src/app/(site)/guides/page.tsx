@@ -1,20 +1,20 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
-import { GuidePreviewCard, Pathway } from "@/components/sections/cards";
+import { GuidesBrowser } from "@/components/interactive/guides-browser";
+import { Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero } from "@/components/sections/common";
 import { pathwaySteps, recommendedBooks } from "@/lib/data";
-import { formatBytes, resources } from "@/lib/content-data";
+import { formatBytes, getQuestionStats, resources } from "@/lib/content-data";
 import { getAllGuides } from "@/lib/guides";
 
 export const metadata = {
   title: "Guides and Resources",
 };
 
-const filters = ["All", "Physics", "Astronomy", "Chemistry", "Biology", "Mathematics", "Informatics", "NSTC", "Beginner", "Advanced"];
-
 export default function GuidesPage() {
   const guides = getAllGuides();
   const featured = guides.find((guide) => guide.featured) ?? guides[0];
+  const questionStats = getQuestionStats();
 
   return (
     <>
@@ -25,40 +25,13 @@ export default function GuidesPage() {
         stats={[
           { label: "Guides & Articles", value: guides.length.toString(), icon: "book-open" },
           { label: "Resources Indexed", value: resources.length.toString(), icon: "download" },
-          { label: "Past Questions", value: "538", icon: "clipboard-check" },
+          { label: "Past Questions", value: questionStats.total.toString(), icon: "clipboard-check" },
           { label: "Contributors", value: "Open", icon: "users" },
         ]}
       />
 
       <section className="py-8">
         <Container>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex gap-2 overflow-x-auto">
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold ${
-                    filter === "All" ? "border-emerald bg-emerald text-white" : "border-navy/10 bg-white text-charcoal"
-                  }`}
-                  type="button"
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <label className="flex min-w-0 items-center gap-2 rounded-md border border-navy/10 bg-white px-3 py-2 text-sm text-charcoal/60">
-                <Icon name="search" className="h-4 w-4" />
-                <input className="min-w-0 bg-transparent outline-none" placeholder="Search guides, topics, authors..." />
-              </label>
-              <select className="rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-bold text-charcoal">
-                <option>Latest</option>
-                <option>Most read</option>
-                <option>Beginner first</option>
-              </select>
-            </div>
-          </div>
-
           {featured && (
             <div className="mt-6 grid overflow-hidden rounded-md bg-navy text-white shadow-2xl lg:grid-cols-[0.9fr_1.2fr]">
               <div className="science-field dark-panel min-h-[280px] p-8">
@@ -78,8 +51,8 @@ export default function GuidesPage() {
                 </div>
                 <div className="mt-7 flex flex-wrap gap-3">
                   <ButtonLink href={`/guides/${featured.slug}`}>Read Guide</ButtonLink>
-                  <ButtonLink href="#" variant="outline" icon="bookmark">
-                    Save for Later
+                  <ButtonLink href="/resources" variant="outline" icon="download">
+                    Browse Resources
                   </ButtonLink>
                 </div>
               </div>
@@ -91,17 +64,13 @@ export default function GuidesPage() {
       <section className="pb-10">
         <Container className="grid gap-8 lg:grid-cols-[1fr_0.52fr]">
           <div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {guides.map((guide) => (
-                <GuidePreviewCard key={guide.slug} guide={guide} />
-              ))}
-            </div>
+            <GuidesBrowser guides={guides} />
           </div>
           <aside className="space-y-5">
             <div className="card-surface rounded-md p-5">
               <div className="flex items-center justify-between">
                 <h2 className="font-black text-charcoal">Downloadable Resources</h2>
-                <Link href="#" className="text-sm font-black text-emerald">
+                <Link href="/resources" className="text-sm font-black text-emerald">
                   View all
                 </Link>
               </div>

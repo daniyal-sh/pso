@@ -90,9 +90,9 @@ export function Footer() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>2026 Pakistan Olympiads. All rights reserved.</span>
           <div className="flex gap-5">
-            <Link href="#">Privacy Policy</Link>
-            <Link href="#">Terms of Use</Link>
-            <Link href="#">Contact Us</Link>
+            <Link href="/about">Privacy Policy</Link>
+            <Link href="/about">Terms of Use</Link>
+            <Link href="/about">Contact Us</Link>
           </div>
         </div>
       </div>

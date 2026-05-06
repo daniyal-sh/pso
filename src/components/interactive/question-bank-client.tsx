@@ -6,13 +6,15 @@ import { Badge } from "@/components/sections/common";
 import type { Question } from "@/lib/content-data";
 import { cn } from "@/lib/utils";
 
-const tabs = ["All Questions", "MCQs", "Long Problems", "Past Papers", "Bookmarked"];
+const tabs = ["All Questions", "Common MCQs", "Subject MCQs", "Descriptive", "Problem Sets"];
 
 export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const subjects = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => question.subject))).sort()], [questions]);
   const years = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => String(question.year)))).sort()], [questions]);
   const exams = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => question.exam))).sort()], [questions]);
+  const sections = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => question.section))).sort()], [questions]);
   const [subject, setSubject] = useState("All");
+  const [section, setSection] = useState("All");
   const [year, setYear] = useState("All");
   const [exam, setExam] = useState("All");
   const [type, setType] = useState("All Questions");
@@ -24,18 +26,19 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const filtered = useMemo(() => {
     return questions.filter((question) => {
       const matchesSubject = subject === "All" || question.subject === subject;
+      const matchesSection = section === "All" || question.section === section;
       const matchesYear = year === "All" || String(question.year) === year;
       const matchesExam = exam === "All" || question.exam === exam;
       const matchesType =
         type === "All Questions" ||
-        (type === "MCQs" && question.type === "MCQ") ||
-        (type === "Long Problems" && question.type === "Long") ||
-        (type === "Past Papers" && Boolean(question.paperId)) ||
-        type === "Bookmarked";
-      const matchesQuery = !query.trim() || `${question.prompt} ${question.source} ${question.topic}`.toLowerCase().includes(query.toLowerCase());
-      return matchesSubject && matchesYear && matchesExam && matchesType && matchesQuery;
+        (type === "Common MCQs" && question.section === "Part I") ||
+        (type === "Subject MCQs" && question.section === "Part II") ||
+        (type === "Descriptive" && question.section === "Part III") ||
+        (type === "Problem Sets" && question.section === "Resource");
+      const matchesQuery = !query.trim() || `${question.prompt} ${question.source} ${question.topic} ${question.sectionTitle}`.toLowerCase().includes(query.toLowerCase());
+      return matchesSubject && matchesSection && matchesYear && matchesExam && matchesType && matchesQuery;
     });
-  }, [exam, query, questions, subject, type, year]);
+  }, [exam, query, questions, section, subject, type, year]);
 
   const active = filtered[activeIndex] ?? filtered[0] ?? questions[0];
   const topicCards = useMemo(() => {
@@ -48,7 +51,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
       else current.long += 1;
       map.set(key, current);
     }
-    return Array.from(map.entries()).slice(0, 8);
+    return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count).slice(0, 8);
   }, [questions]);
 
   function moveTo(index: number) {
@@ -67,8 +70,10 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
             type="button"
             onClick={() => {
               setSubject("All");
+              setSection("All");
               setYear("All");
               setExam("All");
+              setType("All Questions");
               setQuery("");
             }}
           >
@@ -77,6 +82,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
         </div>
         <div className="space-y-5">
           <Select label="Subject" value={subject} values={subjects} onChange={setSubject} />
+          <Select label="Section" value={section} values={sections} onChange={setSection} />
           <Select label="Exam" value={exam} values={exams} onChange={setExam} />
           <Select label="Year" value={year} values={years} onChange={setYear} />
           <label className="flex items-center gap-2 rounded-md border border-navy/10 bg-white px-3 py-2 text-sm text-charcoal/60">
@@ -111,7 +117,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                   type === tab && "bg-emerald text-white",
                 )}
               >
-                <Icon name={index === 0 ? "list-checks" : index === 2 ? "book-open" : "bookmark"} className="h-4 w-4" />
+                <Icon name={index === 0 ? "list-checks" : index === 3 ? "book-open" : "bookmark"} className="h-4 w-4" />
                 {tab}
               </button>
             ))}
@@ -148,20 +154,20 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
         {active && (
           <div className="card-surface rounded-md p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-sm font-black uppercase text-charcoal">Question {active.number}</h2>
-              <span className="text-sm font-bold text-charcoal/60">{active.source}</span>
+              <h2 className="text-sm font-black uppercase text-charcoal">Question {active.displayNumber ?? active.number}</h2>
+              <span className="text-sm font-bold text-charcoal/60">{active.sectionTitle} - {active.source}</span>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {[active.subject, active.topic, active.difficulty, active.exam, String(active.year), active.type].map((tag) => (
+              {[active.subject, active.section, active.topic, active.difficulty, active.exam, String(active.year), active.type].map((tag) => (
                 <Badge key={tag}>{tag}</Badge>
               ))}
             </div>
             <p className="mt-5 whitespace-pre-wrap text-base leading-8 text-charcoal">{active.prompt}</p>
             {active.figure && (
               <details className="mt-4 rounded-md border border-navy/10 bg-white p-3">
-                <summary className="cursor-pointer text-sm font-black text-emerald">Show source page / diagram</summary>
+                <summary className="cursor-pointer text-sm font-black text-emerald">Show diagram</summary>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={active.figure} alt={`Source page for ${active.id}`} className="mt-3 w-full rounded-md border border-navy/10" />
+                <img src={active.figure} alt={`Diagram for ${active.id}`} className="mt-3 w-full rounded-md border border-navy/10" />
               </details>
             )}
             {active.options.length > 0 && (
@@ -184,7 +190,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
             )}
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-semibold text-charcoal/70">
-                Extracted from {active.paperId ? "past paper" : "problem set"} content. Page {active.page ?? "n/a"}.
+                Extracted from {active.paperId ? `${active.sectionTitle} in a past paper` : "problem set content"}. Page {active.page ?? "n/a"}.
               </p>
               <button
                 onClick={() => setShowSolution((value) => !value)}
@@ -199,7 +205,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
               <div className="mt-5 rounded-md border border-emerald/20 bg-mint p-4">
                 <h3 className="font-black text-emerald">Solution</h3>
                 <p className="mt-2 text-sm leading-7 text-charcoal/80">
-                  {active.solution || "A reviewed solution has not been added yet. Admins can attach official solutions or contributor explanations from the dashboard."}
+                  {active.solution || "No reviewed solution is attached to this extracted item yet. The prompt, section, options, page, and diagram crop are ready for contributor review."}
                 </p>
               </div>
             )}
@@ -225,7 +231,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
           <h2 className="text-sm font-black uppercase text-charcoal">Contributor Workflow</h2>
           <div className="mt-4 space-y-3 text-sm text-charcoal/75">
             <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Extracted questions are ready for review.</p>
-            <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Source page images preserve diagrams.</p>
+            <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Diagram crops are attached only where a question needs them.</p>
             <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Solutions can be added by admins.</p>
           </div>
         </div>

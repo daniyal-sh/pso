@@ -18,7 +18,11 @@
       "/paper-assets/biology-2022-final-biology-2022-068e355/page-6.webp",
       "/paper-assets/biology-2022-final-biology-2022-068e355/page-7.webp"
     ],
-    "questionCount": 73
+    "questionCount": 71,
+    "mcqCount": 70,
+    "descriptiveCount": 1,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "chemistry-2022-final-chemistry-2022-b9f5031",
@@ -41,7 +45,11 @@
       "/paper-assets/chemistry-2022-final-chemistry-2022-b9f5031/page-8.webp",
       "/paper-assets/chemistry-2022-final-chemistry-2022-b9f5031/page-9.webp"
     ],
-    "questionCount": 75
+    "questionCount": 71,
+    "mcqCount": 70,
+    "descriptiveCount": 1,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "mathematics-2022-final-maths-2022-fb487f9",
@@ -62,7 +70,11 @@
       "/paper-assets/mathematics-2022-final-maths-2022-fb487f9/page-6.webp",
       "/paper-assets/mathematics-2022-final-maths-2022-fb487f9/page-7.webp"
     ],
-    "questionCount": 24
+    "questionCount": 72,
+    "mcqCount": 70,
+    "descriptiveCount": 2,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "physics-2022-final-physics-2022-b4137e5",
@@ -86,7 +98,11 @@
       "/paper-assets/physics-2022-final-physics-2022-b4137e5/page-9.webp",
       "/paper-assets/physics-2022-final-physics-2022-b4137e5/page-10.webp"
     ],
-    "questionCount": 74
+    "questionCount": 73,
+    "mcqCount": 70,
+    "descriptiveCount": 3,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "biology-2023-final-biology-2023-a4481c6",
@@ -106,7 +122,11 @@
       "/paper-assets/biology-2023-final-biology-2023-a4481c6/page-5.webp",
       "/paper-assets/biology-2023-final-biology-2023-a4481c6/page-6.webp"
     ],
-    "questionCount": 24
+    "questionCount": 71,
+    "mcqCount": 70,
+    "descriptiveCount": 1,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "chemistry-2023-final-chemistry-2023-abc462e",
@@ -128,7 +148,11 @@
       "/paper-assets/chemistry-2023-final-chemistry-2023-abc462e/page-7.webp",
       "/paper-assets/chemistry-2023-final-chemistry-2023-abc462e/page-8.webp"
     ],
-    "questionCount": 26
+    "questionCount": 71,
+    "mcqCount": 70,
+    "descriptiveCount": 1,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "mathematics-2023-final-maths-2023-4566955",
@@ -149,7 +173,11 @@
       "/paper-assets/mathematics-2023-final-maths-2023-4566955/page-6.webp",
       "/paper-assets/mathematics-2023-final-maths-2023-4566955/page-7.webp"
     ],
-    "questionCount": 74
+    "questionCount": 72,
+    "mcqCount": 70,
+    "descriptiveCount": 2,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "physics-2023-final-physics-2023-ac5a924",
@@ -172,7 +200,11 @@
       "/paper-assets/physics-2023-final-physics-2023-ac5a924/page-8.webp",
       "/paper-assets/physics-2023-final-physics-2023-ac5a924/page-9.webp"
     ],
-    "questionCount": 24
+    "questionCount": 72,
+    "mcqCount": 70,
+    "descriptiveCount": 2,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "biology-2024-final-biology-2024-3efb125",
@@ -194,7 +226,11 @@
       "/paper-assets/biology-2024-final-biology-2024-3efb125/page-7.webp",
       "/paper-assets/biology-2024-final-biology-2024-3efb125/page-8.webp"
     ],
-    "questionCount": 24
+    "questionCount": 72,
+    "mcqCount": 70,
+    "descriptiveCount": 2,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "chemistry-2024-final-chemistry-2024-1800740",
@@ -216,7 +252,11 @@
       "/paper-assets/chemistry-2024-final-chemistry-2024-1800740/page-7.webp",
       "/paper-assets/chemistry-2024-final-chemistry-2024-1800740/page-8.webp"
     ],
-    "questionCount": 24
+    "questionCount": 71,
+    "mcqCount": 70,
+    "descriptiveCount": 1,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "mathematics-2024-final-maths-2024-640e2ac",
@@ -236,7 +276,11 @@
       "/paper-assets/mathematics-2024-final-maths-2024-640e2ac/page-5.webp",
       "/paper-assets/mathematics-2024-final-maths-2024-640e2ac/page-6.webp"
     ],
-    "questionCount": 24
+    "questionCount": 72,
+    "mcqCount": 70,
+    "descriptiveCount": 2,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "physics-2024-final-physics-2024-405c90b",
@@ -258,7 +302,11 @@
       "/paper-assets/physics-2024-final-physics-2024-405c90b/page-7.webp",
       "/paper-assets/physics-2024-final-physics-2024-405c90b/page-8.webp"
     ],
-    "questionCount": 24
+    "questionCount": 72,
+    "mcqCount": 70,
+    "descriptiveCount": 2,
+    "partICount": 20,
+    "partIICount": 50
   },
   {
     "id": "biology-2025-bio-77144bc",
@@ -280,7 +328,11 @@
       "/paper-assets/biology-2025-bio-77144bc/page-7.webp",
       "/paper-assets/biology-2025-bio-77144bc/page-8.webp"
     ],
-    "questionCount": 10
+    "questionCount": 51,
+    "mcqCount": 51,
+    "descriptiveCount": 0,
+    "partICount": 14,
+    "partIICount": 37
   },
   {
     "id": "chemistry-2025-chemistry-7a8e875",
@@ -302,7 +354,11 @@
       "/paper-assets/chemistry-2025-chemistry-7a8e875/page-7.webp",
       "/paper-assets/chemistry-2025-chemistry-7a8e875/page-8.webp"
     ],
-    "questionCount": 8
+    "questionCount": 44,
+    "mcqCount": 44,
+    "descriptiveCount": 0,
+    "partICount": 19,
+    "partIICount": 25
   },
   {
     "id": "mathematics-2025-mathematics-6775970",
@@ -322,7 +378,11 @@
       "/paper-assets/mathematics-2025-mathematics-6775970/page-5.webp",
       "/paper-assets/mathematics-2025-mathematics-6775970/page-6.webp"
     ],
-    "questionCount": 8
+    "questionCount": 39,
+    "mcqCount": 39,
+    "descriptiveCount": 0,
+    "partICount": 19,
+    "partIICount": 20
   },
   {
     "id": "physics-2025-physics-bf314d9",
@@ -345,6 +405,10 @@
       "/paper-assets/physics-2025-physics-bf314d9/page-8.webp",
       "/paper-assets/physics-2025-physics-bf314d9/page-9.webp"
     ],
-    "questionCount": 10
+    "questionCount": 63,
+    "mcqCount": 63,
+    "descriptiveCount": 0,
+    "partICount": 19,
+    "partIICount": 44
   }
 ]

@@ -25,12 +25,12 @@ export default async function PastPaperDetailPage({ params }: { params: Promise<
     <>
       <PageHero
         title={paper.title}
-        subtitle={`${paper.exam} ${paper.year} ${paper.subject} practice with ${paperQuestions.length} extracted questions, page references, and original PDF images.`}
+        subtitle={`${paper.exam} ${paper.year} ${paper.subject} practice with Part I common MCQs, Part II subject MCQs, and descriptive questions.`}
         stats={[
-          { label: "Questions", value: paperQuestions.length.toString(), icon: "clipboard-check" },
-          { label: "Pages", value: paper.pages.toString(), icon: "file-text" },
-          { label: "Subject", value: paper.subject, icon: "atom" },
-          { label: "Extraction", value: paper.scanned ? "OCR" : "Text", icon: "eye" },
+          { label: "MCQs", value: paper.mcqCount.toString(), icon: "clipboard-check" },
+          { label: "Common", value: paper.partICount.toString(), icon: "list-checks" },
+          { label: "Subject", value: paper.partIICount.toString(), icon: "atom" },
+          { label: "Descriptive", value: paper.descriptiveCount.toString(), icon: "book-open" },
         ]}
       />
       <section className="py-8">

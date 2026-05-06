@@ -21,7 +21,7 @@ export default function AboutPage() {
       />
       <section className="py-10">
         <Container>
-          <SectionTitle title="Design philosophy" copy="The MVP reflects the palette and principles from the reference board: emerald, navy, teal, gold, science motifs, and readable academic polish." />
+          <SectionTitle title="Design philosophy" copy="The platform carries the palette and principles from the reference board: emerald, navy, teal, gold, science motifs, and readable academic polish." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {principles.map(([title, copy, icon]) => (
               <div key={title} className="card-surface rounded-md p-6">
@@ -34,7 +34,7 @@ export default function AboutPage() {
           <div className="dark-panel mt-8 rounded-md p-6 text-white">
             <h2 className="font-display text-3xl font-bold">Built for contributors</h2>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-white/75">
-              The first pass uses mock data and local MDX placeholders, with clear boundaries for guides, blog posts, questions, past papers, and admin workflows.
+              The site is organized around imported guides, indexed resources, extracted past-paper questions, and a contributor dashboard for reviewing solutions and metadata.
             </p>
             <div className="mt-5">
               <ButtonLink href="/admin/dashboard">Open dashboard</ButtonLink>

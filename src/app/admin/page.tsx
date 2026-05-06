@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
         </section>
         <section className="bg-white p-8 text-charcoal sm:p-10">
           <h2 className="text-2xl font-black">Login / Sign up</h2>
-          <p className="mt-2 text-sm leading-6 text-charcoal/70">Authentication is ready to connect to Supabase Auth or another provider.</p>
+          <p className="mt-2 text-sm leading-6 text-charcoal/70">Use the preview credentials form to open the moderation workspace.</p>
           <form className="mt-6 space-y-4">
             <label className="block">
               <span className="text-sm font-bold">Email</span>
@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
             </label>
             <label className="block">
               <span className="text-sm font-bold">Password</span>
-              <input className="mt-2 w-full rounded-md border border-navy/10 px-4 py-3 outline-none focus:border-emerald" placeholder="••••••••" type="password" />
+              <input className="mt-2 w-full rounded-md border border-navy/10 px-4 py-3 outline-none focus:border-emerald" placeholder="password" type="password" />
             </label>
             <Link href="/admin/dashboard" className="flex min-h-12 items-center justify-center rounded-md bg-emerald px-5 text-sm font-black text-white shadow-lg shadow-emerald/20">
               Continue to dashboard

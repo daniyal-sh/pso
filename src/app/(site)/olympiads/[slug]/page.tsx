@@ -25,7 +25,7 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   if (!track) notFound();
   const subjectQuestions = questions.filter((question) => question.subject === track.name);
   const subjectPapers = pastPapers.filter((paper) => paper.subject === track.name);
-  const subjectResources = resources.filter((resource) => resource.subject === track.name).slice(0, 6);
+  const subjectResources = resources.filter((resource) => resource.subject === track.name || (track.name === "Astronomy" && resource.subject === "IOAA"));
   const subjectGuides = getAllGuides().filter((guide) => guide.category === track.name || guide.tags.includes(track.name)).slice(0, 4);
 
   return (
@@ -45,7 +45,7 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
       <section className="py-10">
         <Container className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <SectionTitle title="Preparation outcomes" copy="A compact first pass for track pages, designed to grow into backend-powered roadmaps." />
+            <SectionTitle title="Preparation outcomes" copy="Core skills and habits for this olympiad track." />
             <div className="grid gap-4 sm:grid-cols-3">
               {track.outcomes.map((outcome) => (
                 <div key={outcome} className="card-surface rounded-md p-5">
@@ -111,13 +111,16 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
           </div>
           <div className="card-surface rounded-md p-6">
             <h2 className="font-display text-3xl font-bold text-charcoal">Resources</h2>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-2">
               {subjectResources.map((resource) => (
                 <Link key={resource.id} href={resource.localUrl ?? resource.sourceUrl} target={resource.localUrl ? undefined : "_blank"} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
                   {resource.title}
                 </Link>
               ))}
             </div>
+            <Link href={`/resources?subject=${encodeURIComponent(track.name)}`} className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald">
+              Browse {track.name} resources <Icon name="chevron" className="h-4 w-4" />
+            </Link>
           </div>
         </Container>
       </section>

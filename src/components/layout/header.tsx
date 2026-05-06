@@ -39,19 +39,6 @@ export function Header() {
           >
             <Icon name="search" className="h-5 w-5" />
           </button>
-          <button
-            className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/10 text-gold transition hover:border-gold/50 sm:flex"
-            aria-label="Toggle theme"
-            type="button"
-          >
-            <Icon name="sun" className="h-5 w-5" />
-          </button>
-          <Link
-            href="/guides/ioaa-pakistan-guide"
-            className="rounded-md bg-emerald px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald/20 transition hover:bg-teal"
-          >
-            IOAA Guide
-          </Link>
         </div>
       </div>
       <div className="flex gap-2 overflow-x-auto border-t border-white/10 px-4 py-2 lg:hidden">

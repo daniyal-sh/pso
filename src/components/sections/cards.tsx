@@ -162,7 +162,7 @@ export function AlumniCard({
         </p>
       </div>
       <p className="mt-4 text-sm font-medium leading-6 text-charcoal">{`"${story.quote}"`}</p>
-      <Link href="#" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald">
+      <Link href="/alumni" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald">
         Read more <Icon name="chevron" className="h-4 w-4" />
       </Link>
     </article>

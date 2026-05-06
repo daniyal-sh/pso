@@ -82,7 +82,7 @@ export default function AlumniPage() {
                     </div>
                   ))}
                 </div>
-                <ButtonLink href="#" className="mt-6">
+                <ButtonLink href="/blog" className="mt-6">
                   Read Full Story
                 </ButtonLink>
               </div>

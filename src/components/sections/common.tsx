@@ -93,7 +93,7 @@ export function PageHero({
       {variant === "home" ? (
         <div
           className="absolute inset-y-0 right-0 hidden w-full bg-cover bg-center opacity-80 md:block lg:w-[62%]"
-          style={{ backgroundImage: "url('/generated/pakistan-olympiads-hero.png')" }}
+          style={{ backgroundImage: "url('/generated/science-hero-no-people.png')" }}
         />
       ) : (
         <ScienceMural variant={variant} className="absolute inset-y-0 right-0 hidden w-full rounded-none opacity-70 md:block lg:w-[58%]" />

@@ -17,6 +17,7 @@ function formatTime(seconds: number) {
 export function PastPaperPractice({ paper, questions, papers }: { paper: PastPaper; questions: Question[]; papers: PastPaper[] }) {
   const [seconds, setSeconds] = useState(Math.max(3600, questions.length * 90));
   const [paused, setPaused] = useState(false);
+  const [section, setSection] = useState("Part I");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(new Set<string>());
@@ -31,7 +32,19 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
     return () => window.clearInterval(id);
   }, [paused]);
 
-  const current = questions[currentIndex] ?? questions[0];
+  const sections = useMemo(
+    () => [
+      { key: "Part I", label: "Common MCQs", count: questions.filter((question) => question.section === "Part I").length },
+      { key: "Part II", label: `${paper.subject} MCQs`, count: questions.filter((question) => question.section === "Part II").length },
+      { key: "Part III", label: "Descriptive", count: questions.filter((question) => question.section === "Part III").length },
+    ],
+    [paper.subject, questions],
+  );
+  const sectionQuestions = useMemo(() => {
+    const scoped = questions.filter((question) => question.section === section);
+    return scoped.length ? scoped : questions;
+  }, [questions, section]);
+  const current = sectionQuestions[currentIndex] ?? sectionQuestions[0] ?? questions[0];
   const progress = questions.length ? Math.round((answered.size / questions.length) * 100) : 0;
   const relatedPapers = useMemo(() => papers.filter((item) => item.id !== paper.id && item.subject === paper.subject).slice(0, 4), [paper.id, paper.subject, papers]);
 
@@ -43,7 +56,7 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
   }
 
   function goTo(index: number) {
-    setCurrentIndex(Math.max(0, Math.min(questions.length - 1, index)));
+    setCurrentIndex(Math.max(0, Math.min(sectionQuestions.length - 1, index)));
     setSelected(null);
     setShowSolution(false);
   }
@@ -103,12 +116,34 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
         <div className="mt-5 h-2 rounded-full bg-cool">
           <div className="h-2 rounded-full bg-emerald" style={{ width: `${progress}%` }} />
         </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {sections.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => {
+                setSection(item.key);
+                setCurrentIndex(0);
+                setSelected(null);
+                setShowSolution(false);
+              }}
+              className={cn(
+                "rounded-md border px-4 py-3 text-left transition",
+                section === item.key ? "border-emerald bg-mint text-emerald" : "border-navy/10 bg-white text-charcoal",
+              )}
+            >
+              <span className="text-sm font-black">{item.label}</span>
+              <span className="mt-1 block text-xs font-bold opacity-70">{item.count} questions</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_0.65fr]">
         <section className="card-surface rounded-md">
           <div className="flex flex-wrap items-center gap-3 border-b border-navy/10 p-5">
-            <Badge>Question {current.number}</Badge>
+            <Badge>Question {current.displayNumber ?? current.number}</Badge>
+            <span className="text-sm font-bold text-charcoal/70">{current.sectionTitle}</span>
             <span className="text-sm font-bold text-charcoal/70">{current.type}</span>
             <span className="text-sm font-bold text-charcoal/70">{current.difficulty}</span>
             <span className="text-sm font-bold text-charcoal/70">Page {current.page ?? "n/a"}</span>
@@ -122,7 +157,7 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
             {current.figure && (
               <div className="my-6 rounded-md border border-navy/10 bg-white p-3">
                 <div className="mb-2 flex items-center justify-between text-sm font-black text-charcoal">
-                  <span>Source page / diagram reference</span>
+                  <span>Diagram</span>
                   {paper.resourceUrl && (
                     <Link href={paper.resourceUrl} className="text-emerald" target="_blank">
                       Open PDF
@@ -130,7 +165,7 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
                   )}
                 </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={current.figure} alt={`Question ${current.number} source page`} className="max-h-[720px] w-full rounded-md object-contain" />
+                <img src={current.figure} alt={`Diagram for question ${current.number}`} className="max-h-[720px] w-full rounded-md object-contain" />
               </div>
             )}
             {current.options.length > 0 ? (
@@ -181,7 +216,7 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
               <Icon name="calculator" className="h-5 w-5 text-emerald" /> Question Navigator
             </h2>
             <div className="mt-4 grid grid-cols-8 gap-2 sm:grid-cols-10">
-              {questions.map((question, index) => {
+              {sectionQuestions.map((question, index) => {
                 const isAnswered = answered.has(question.id);
                 const isCurrent = question.id === current.id;
                 return (
@@ -196,7 +231,7 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
                     )}
                     type="button"
                   >
-                    {marked.has(question.id) ? <Icon name="star" className="h-4 w-4" /> : question.number}
+                    {marked.has(question.id) ? <Icon name="star" className="h-4 w-4" /> : question.displayNumber ?? question.number}
                   </button>
                 );
               })}
@@ -226,7 +261,7 @@ export function PastPaperPractice({ paper, questions, papers }: { paper: PastPap
               <Icon name="eye" className="h-5 w-5 text-navy" /> View Solution
             </h2>
             {showSolution ? (
-              <p className="mt-3 text-sm leading-7 text-charcoal/80">{current.solution || "A reviewed solution has not been attached yet. Use the admin dashboard to add official or contributor solutions."}</p>
+              <p className="mt-3 text-sm leading-7 text-charcoal/80">{current.solution || "No reviewed solution is attached to this extracted item yet. The admin workflow can add official or contributor explanations."}</p>
             ) : (
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-charcoal/70">Reveal the solution panel after attempting the problem.</p>

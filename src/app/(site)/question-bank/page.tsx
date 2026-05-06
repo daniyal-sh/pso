@@ -8,6 +8,9 @@ export const metadata = {
 
 export default function QuestionBankPage() {
   const stats = getQuestionStats();
+  const partI = questions.filter((question) => question.section === "Part I").length;
+  const partII = questions.filter((question) => question.section === "Part II").length;
+  const diagrams = questions.filter((question) => question.figure).length;
   return (
     <>
       <PageHero
@@ -28,12 +31,12 @@ export default function QuestionBankPage() {
       </section>
       <StatStrip
         stats={[
-          { label: "Average Quality", value: "4.8/5", icon: "star" },
-          { label: "Correctly Solved", value: "92%", icon: "timer" },
-          { label: "Total Attempts", value: "1.2M+", icon: "sparkles" },
-          { label: "Community Solutions", value: "18K+", icon: "users" },
-          { label: "New Questions", value: "Daily", icon: "sun" },
-          { label: "Mock Data", value: "Ready", icon: "shield" },
+          { label: "Common MCQs", value: partI.toLocaleString(), icon: "star" },
+          { label: "Subject MCQs", value: partII.toLocaleString(), icon: "timer" },
+          { label: "Descriptive", value: stats.long.toLocaleString(), icon: "book-open" },
+          { label: "Diagram Crops", value: diagrams.toLocaleString(), icon: "sparkles" },
+          { label: "Subjects", value: stats.subjects.toLocaleString(), icon: "atom" },
+          { label: "Source Papers", value: stats.papers.toLocaleString(), icon: "file-text" },
         ]}
       />
     </>

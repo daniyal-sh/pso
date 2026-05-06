@@ -34,15 +34,16 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               <Badge>{post.author}</Badge>
             </div>
             <div className="mt-8 space-y-5 text-base leading-8 text-charcoal/80">
+              <p>{post.excerpt}</p>
               <p>
-                This placeholder article establishes the editorial page design. It can later render MDX, comments, and author profiles from a real content backend.
+                The strongest preparation plans are specific: choose a resource, define a weekly practice target, review mistakes carefully, and keep a small correction log for ideas that should not be missed twice.
+              </p>
+              <h2 className="font-display text-3xl font-bold text-charcoal">How to apply this</h2>
+              <p>
+                Turn the advice into a concrete session. Pick one topic from {post.category}, solve a short set under time pressure, then write down the concept, trick, or misconception behind each missed question.
               </p>
               <p>
-                Pakistan Olympiads content should stay precise, generous, and practical: clear roadmaps, honest difficulty notes, and advice from students who have walked the path.
-              </p>
-              <h2 className="font-display text-3xl font-bold text-charcoal">Contributor checklist</h2>
-              <p>
-                Add source links, verify dates, credit authors, and include worked examples wherever possible. Keep the tone ambitious without making preparation feel inaccessible.
+                If the session exposes a gap, go back to the relevant guide or resource page before attempting another timed set. That loop keeps practice purposeful instead of merely repetitive.
               </p>
             </div>
           </article>

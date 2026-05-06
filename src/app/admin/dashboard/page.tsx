@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
                           </td>
                           <td className="text-white/70">{row.date}</td>
                           <td className="font-bold text-white">{row.views}</td>
-                          <td className="text-white/70">...</td>
+                          <td className="font-bold text-emerald">Manage</td>
                         </tr>
                       ))}
                     </tbody>
@@ -219,7 +219,7 @@ export default function AdminDashboardPage() {
                         <Icon name={index % 2 === 0 ? "book-open" : "lightbulb"} className="h-5 w-5 text-gold" />
                         <div>
                           <p className="text-sm font-bold text-white">{item}</p>
-                          <p className="text-xs text-white/55">By contributor</p>
+                          <p className="text-xs text-white/55">Content workflow</p>
                         </div>
                       </div>
                       <button className="rounded-md bg-emerald px-3 py-1.5 text-xs font-black text-white" type="button">
@@ -261,15 +261,15 @@ export default function AdminDashboardPage() {
                 <h2 className="text-lg font-black text-white">Analytics Overview</h2>
                 <div className="mt-5 space-y-3">
                   {[
-                    ["Website Visitors", "32,842"],
-                    ["Page Views", "89,120"],
-                    ["Downloads", "12,456"],
-                    ["New Signups", "1,256"],
+                    ["Guides", guides.length.toLocaleString()],
+                    ["Resources", resourceStats.total.toLocaleString()],
+                    ["Local Files", resourceStats.local.toLocaleString()],
+                    ["Questions", questionStats.total.toLocaleString()],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-md border border-white/10 bg-[#061117]/70 p-4">
                       <p className="text-xs text-white/55">{label}</p>
                       <p className="text-2xl font-black text-white">{value}</p>
-                      <p className="text-xs font-bold text-emerald">Up this month</p>
+                      <p className="text-xs font-bold text-emerald">Indexed in repository</p>
                     </div>
                   ))}
                 </div>
@@ -288,7 +288,12 @@ export default function AdminDashboardPage() {
               <div className="rounded-md border border-white/10 bg-white/5 p-5">
                 <h2 className="text-lg font-black text-white">Contributor Activity</h2>
                 <div className="mt-5 space-y-4">
-                  {["Zainab R. published a guide", "Huzaifa A. submitted a post", "Ali Raza uploaded a paper", "Sara Khan joined the community"].map((activity) => (
+                  {[
+                    `${guides.length} MDX guides available`,
+                    `${resources.length} resources grouped by subject`,
+                    `${pastPapers.length} past papers indexed`,
+                    `${questions.filter((question) => question.figure).length} diagram crops attached`,
+                  ].map((activity) => (
                     <div key={activity} className="flex items-center gap-3">
                       <span className="h-3 w-3 rounded-full bg-emerald" />
                       <p className="text-sm text-white/75">{activity}</p>

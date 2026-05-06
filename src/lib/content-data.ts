@@ -1,6 +1,7 @@
 import pastPapersJson from "@/data/past-papers.json";
 import questionsJson from "@/data/questions.json";
 import resourcesJson from "@/data/resources.json";
+import { guideSourceResources } from "@/lib/guide-source-resources";
 
 export type ResourceItem = {
   id: string;
@@ -27,16 +28,24 @@ export type PastPaper = {
   scanned: boolean;
   pageImages: string[];
   questionCount: number;
+  mcqCount: number;
+  descriptiveCount: number;
+  partICount: number;
+  partIICount: number;
 };
 
 export type Question = {
   id: string;
   paperId: string;
+  paperSubject: string;
   number: number;
+  displayNumber: string;
   subject: string;
   topic: string;
   difficulty: string;
   type: "MCQ" | "Long";
+  section: string;
+  sectionTitle: string;
   exam: string;
   year: number;
   source: string;
@@ -48,7 +57,7 @@ export type Question = {
   figure: string;
 };
 
-export const resources = resourcesJson as ResourceItem[];
+export const resources = [...(resourcesJson as ResourceItem[]), ...guideSourceResources];
 export const pastPapers = pastPapersJson as PastPaper[];
 export const questions = questionsJson as Question[];
 
