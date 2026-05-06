@@ -2,6 +2,7 @@ export const navItems = [
   { href: "/", label: "Home" },
   { href: "/olympiads", label: "Olympiads" },
   { href: "/guides", label: "Guides" },
+  { href: "/resources", label: "Resources" },
   { href: "/question-bank", label: "Question Bank" },
   { href: "/past-papers", label: "Past Papers" },
   { href: "/blog", label: "Blog" },

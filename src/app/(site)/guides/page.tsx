@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { GuidePreviewCard, Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero } from "@/components/sections/common";
-import { downloadableResources, pathwaySteps, recommendedBooks } from "@/lib/data";
+import { pathwaySteps, recommendedBooks } from "@/lib/data";
+import { formatBytes, resources } from "@/lib/content-data";
 import { getAllGuides } from "@/lib/guides";
 
 export const metadata = {
@@ -22,10 +23,10 @@ export default function GuidesPage() {
         subtitle="Curated preparation guides, book recommendations, roadmaps, and olympiad advice from mentors and alumni."
         variant="guides"
         stats={[
-          { label: "Guides & Articles", value: "250+", icon: "book-open" },
-          { label: "Downloads", value: "1,250+", icon: "download" },
-          { label: "Students Benefited", value: "85K+", icon: "graduation-cap" },
-          { label: "Contributors", value: "20+", icon: "users" },
+          { label: "Guides & Articles", value: guides.length.toString(), icon: "book-open" },
+          { label: "Resources Indexed", value: resources.length.toString(), icon: "download" },
+          { label: "Past Questions", value: "538", icon: "clipboard-check" },
+          { label: "Contributors", value: "Open", icon: "users" },
         ]}
       />
 
@@ -105,18 +106,20 @@ export default function GuidesPage() {
                 </Link>
               </div>
               <div className="mt-4 divide-y divide-navy/10">
-                {downloadableResources.map((resource) => (
-                  <div key={resource} className="flex items-center justify-between py-3">
+                {resources.filter((resource) => resource.localUrl).slice(0, 6).map((resource) => (
+                  <div key={resource.id} className="flex items-center justify-between gap-3 py-3">
                     <div className="flex items-center gap-3">
                       <span className="flex h-9 w-9 items-center justify-center rounded-md bg-red-50 text-red-500">
                         <Icon name="file-text" className="h-5 w-5" />
                       </span>
                       <div>
-                        <p className="text-sm font-black text-charcoal">{resource}</p>
-                        <p className="text-xs text-charcoal/60">PDF placeholder</p>
+                        <p className="line-clamp-1 text-sm font-black text-charcoal">{resource.title}</p>
+                        <p className="text-xs text-charcoal/60">{resource.kind} - {formatBytes(resource.sizeBytes)}</p>
                       </div>
                     </div>
-                    <Icon name="download" className="h-5 w-5 text-emerald" />
+                    <Link href={resource.localUrl ?? resource.sourceUrl} target={resource.localUrl ? undefined : "_blank"} className="shrink-0 text-emerald">
+                      <Icon name="download" className="h-5 w-5" />
+                    </Link>
                   </div>
                 ))}
               </div>

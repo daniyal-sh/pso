@@ -5,15 +5,35 @@ import { Logo } from "@/components/layout/logo";
 const columns = [
   {
     title: "Explore",
-    links: ["Olympiads", "Guides", "Question Bank", "Past Papers", "Blog", "Alumni"],
+    links: [
+      ["Olympiads", "/olympiads"],
+      ["Guides", "/guides"],
+      ["Resources", "/resources"],
+      ["Question Bank", "/question-bank"],
+      ["Past Papers", "/past-papers"],
+      ["Blog", "/blog"],
+    ],
   },
   {
     title: "Resources",
-    links: ["MCQ Practice", "Long Problems", "Roadmaps", "Glossary", "Formula Sheet", "Recommended Books"],
+    links: [
+      ["MCQ Practice", "/question-bank"],
+      ["Long Problems", "/question-bank"],
+      ["Roadmaps", "/guides"],
+      ["IOAA Guide", "/guides/ioaa-pakistan-guide"],
+      ["Resource Library", "/resources"],
+      ["Admin", "/admin"],
+    ],
   },
   {
     title: "Community",
-    links: ["Leaderboard", "Contributors", "Events", "Study Groups", "Our Team"],
+    links: [
+      ["Alumni", "/alumni"],
+      ["Contributors", "/alumni"],
+      ["Events", "/alumni"],
+      ["Study Groups", "/alumni"],
+      ["Our Team", "/about"],
+    ],
   },
 ];
 
@@ -39,10 +59,10 @@ export function Footer() {
             <div key={column.title}>
               <h3 className="text-sm font-bold text-white">{column.title}</h3>
               <ul className="mt-3 space-y-2 text-sm text-white/70">
-                {column.links.map((link) => (
-                  <li key={link}>
-                    <Link href="#" className="transition hover:text-gold">
-                      {link}
+                {column.links.map(([label, href]) => (
+                  <li key={label}>
+                    <Link href={href} className="transition hover:text-gold">
+                      {label}
                     </Link>
                   </li>
                 ))}

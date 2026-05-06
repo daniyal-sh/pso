@@ -90,7 +90,14 @@ export function PageHero({
 }) {
   return (
     <section className="relative overflow-hidden bg-navy text-white">
-      <ScienceMural variant={variant} className="absolute inset-y-0 right-0 hidden w-full rounded-none opacity-70 md:block lg:w-[58%]" />
+      {variant === "home" ? (
+        <div
+          className="absolute inset-y-0 right-0 hidden w-full bg-cover bg-center opacity-80 md:block lg:w-[62%]"
+          style={{ backgroundImage: "url('/generated/pakistan-olympiads-hero.png')" }}
+        />
+      ) : (
+        <ScienceMural variant={variant} className="absolute inset-y-0 right-0 hidden w-full rounded-none opacity-70 md:block lg:w-[58%]" />
+      )}
       <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/92 to-navy/30" />
       <Container className="relative z-10 py-12 sm:py-16 lg:py-20">
         <div className="max-w-3xl">

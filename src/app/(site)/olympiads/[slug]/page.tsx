@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
 import { pathwaySteps, tracks } from "@/lib/data";
+import { pastPapers, questions, resources } from "@/lib/content-data";
+import { getAllGuides } from "@/lib/guides";
 
 export function generateStaticParams() {
   return tracks.map((track) => ({ slug: track.slug }));
@@ -20,6 +23,10 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const track = tracks.find((item) => item.slug === slug);
   if (!track) notFound();
+  const subjectQuestions = questions.filter((question) => question.subject === track.name);
+  const subjectPapers = pastPapers.filter((paper) => paper.subject === track.name);
+  const subjectResources = resources.filter((resource) => resource.subject === track.name).slice(0, 6);
+  const subjectGuides = getAllGuides().filter((guide) => guide.category === track.name || guide.tags.includes(track.name)).slice(0, 4);
 
   return (
     <>
@@ -30,8 +37,8 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
         stats={[
           { label: "Learners", value: track.stats[0].split(" ")[0], icon: "graduation-cap" },
           { label: "Resources", value: track.stats[1].split(" ")[0], icon: "book-open" },
-          { label: "Questions", value: track.stats[2].split(" ")[0], icon: "clipboard-check" },
-          { label: "Roadmap", value: "Ready", icon: "route" },
+          { label: "Questions", value: subjectQuestions.length ? subjectQuestions.length.toString() : track.stats[2].split(" ")[0], icon: "clipboard-check" },
+          { label: "Papers", value: subjectPapers.length.toString(), icon: "file-text" },
         ]}
       />
 
@@ -76,6 +83,43 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
           <SectionTitle title="Selection pathway" />
         </Container>
         <Pathway steps={pathwaySteps} />
+      </section>
+
+      <section className="pb-10">
+        <Container className="grid gap-6 lg:grid-cols-3">
+          <div className="card-surface rounded-md p-6">
+            <h2 className="font-display text-3xl font-bold text-charcoal">Guides</h2>
+            <div className="mt-4 space-y-3">
+              {subjectGuides.length ? subjectGuides.map((guide) => (
+                <Link key={guide.slug} href={`/guides/${guide.slug}`} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
+                  {guide.title}
+                </Link>
+              )) : (
+                <Link href="/guides" className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">Browse all guides</Link>
+              )}
+            </div>
+          </div>
+          <div className="card-surface rounded-md p-6">
+            <h2 className="font-display text-3xl font-bold text-charcoal">Past papers</h2>
+            <div className="mt-4 space-y-3">
+              {subjectPapers.map((paper) => (
+                <Link key={paper.id} href={`/past-papers/${paper.id}`} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
+                  {paper.title} - {paper.questionCount} questions
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="card-surface rounded-md p-6">
+            <h2 className="font-display text-3xl font-bold text-charcoal">Resources</h2>
+            <div className="mt-4 space-y-3">
+              {subjectResources.map((resource) => (
+                <Link key={resource.id} href={resource.localUrl ?? resource.sourceUrl} target={resource.localUrl ? undefined : "_blank"} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
+                  {resource.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </Container>
       </section>
     </>
   );

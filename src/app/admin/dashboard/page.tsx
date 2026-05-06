@@ -1,6 +1,7 @@
 import { Icon } from "@/components/icon";
 import { Logo } from "@/components/layout/logo";
-import { adminRows } from "@/lib/data";
+import { getQuestionStats, getResourceStats, pastPapers, questions, resources } from "@/lib/content-data";
+import { getAllGuides } from "@/lib/guides";
 
 export const metadata = {
   title: "Admin Dashboard | Pakistan Olympiads",
@@ -16,14 +17,6 @@ const sidebar = [
   { label: "Contributors", icon: "users" },
   { label: "Analytics", icon: "activity" },
   { label: "Settings", icon: "shield" },
-];
-
-const metrics = [
-  { label: "Total Resources", value: "1,256", icon: "book-open", change: "18% vs last month", tone: "text-emerald" },
-  { label: "Pending Submissions", value: "34", icon: "clipboard", change: "8% vs last week", tone: "text-gold" },
-  { label: "Published Posts", value: "892", icon: "file-text", change: "22% vs last month", tone: "text-emerald" },
-  { label: "Active Contributors", value: "256", icon: "users", change: "16% vs last month", tone: "text-blue-300" },
-  { label: "Questions to Approve", value: "78", icon: "lightbulb", change: "5% vs last week", tone: "text-red-300" },
 ];
 
 const editors = [
@@ -54,6 +47,42 @@ const editors = [
 ];
 
 export default function AdminDashboardPage() {
+  const questionStats = getQuestionStats();
+  const resourceStats = getResourceStats();
+  const guides = getAllGuides();
+  const contentRows = [
+    ...guides.slice(0, 3).map((guide) => ({
+      title: guide.title,
+      type: "Guide",
+      author: guide.author,
+      status: guide.featured ? "Featured" : "Published",
+      date: guide.updated,
+      views: `${Math.max(120, guide.content.length / 8).toFixed(0)}`,
+    })),
+    ...pastPapers.slice(0, 2).map((paper) => ({
+      title: paper.title,
+      type: "Past Paper",
+      author: "Archive Import",
+      status: paper.scanned ? "OCR Review" : "Published",
+      date: String(paper.year),
+      views: `${paper.questionCount} questions`,
+    })),
+    {
+      title: "Question Bank Extraction",
+      type: "Questions",
+      author: "Resource Ingest",
+      status: questions.some((question) => !question.solution) ? "Needs Solutions" : "Published",
+      date: "May 6, 2026",
+      views: questionStats.total.toLocaleString(),
+    },
+  ];
+  const metrics = [
+    { label: "Indexed Resources", value: resourceStats.total.toLocaleString(), icon: "book-open", change: `${resourceStats.local} local files`, tone: "text-emerald" },
+    { label: "Past Papers", value: pastPapers.length.toLocaleString(), icon: "file-text", change: "2022-2025 archive", tone: "text-gold" },
+    { label: "Extracted Questions", value: questionStats.total.toLocaleString(), icon: "clipboard", change: `${questionStats.mcqs} MCQs`, tone: "text-emerald" },
+    { label: "Needs Solutions", value: questions.filter((question) => !question.solution).length.toLocaleString(), icon: "lightbulb", change: "Ready for contributors", tone: "text-blue-300" },
+    { label: "External References", value: resourceStats.external.toLocaleString(), icon: "bookmark", change: "Large/restricted files", tone: "text-red-300" },
+  ];
   return (
     <main className="min-h-screen bg-navy text-white admin-grid">
       <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
@@ -95,7 +124,7 @@ export default function AdminDashboardPage() {
                 <input className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Search resources, users, posts..." />
               </label>
               <button className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-white/80" type="button">
-                May 12, 2024
+                May 6, 2026
               </button>
             </div>
           </header>
@@ -155,7 +184,7 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {adminRows.map((row) => (
+                      {contentRows.map((row) => (
                         <tr key={row.title} className="border-b border-white/10">
                           <td className="py-4 font-bold text-white">{row.title}</td>
                           <td>
@@ -178,7 +207,13 @@ export default function AdminDashboardPage() {
               <div className="rounded-md border border-white/10 bg-white/5 p-5">
                 <h2 className="text-lg font-black text-white">Moderation Queue</h2>
                 <div className="mt-4 space-y-3">
-                  {["New Guide Submission", "Question Submission", "Past Paper Upload", "Blog Post Submission", "Question Submission"].map((item, index) => (
+                  {[
+                    `${questions.length} extracted questions need answer keys`,
+                    `${resources.filter((resource) => !resource.localUrl).length} large resources need external review`,
+                    `${pastPapers.filter((paper) => paper.scanned).length} OCR-scanned papers need proofreading`,
+                    "IOAA guide imported from Notion",
+                    "Contributor solution queue ready",
+                  ].map((item, index) => (
                     <div key={`${item}-${index}`} className="flex items-center justify-between rounded-md border border-white/10 bg-[#061117]/70 p-3">
                       <div className="flex items-center gap-3">
                         <Icon name={index % 2 === 0 ? "book-open" : "lightbulb"} className="h-5 w-5 text-gold" />

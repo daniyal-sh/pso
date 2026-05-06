@@ -3,95 +3,95 @@
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
 import { Badge } from "@/components/sections/common";
-import { questionTopics, sampleQuestions } from "@/lib/data";
+import type { Question } from "@/lib/content-data";
 import { cn } from "@/lib/utils";
 
-const tabs = ["MCQs", "Long Problems", "Solved Sets", "Bookmarked", "Community Solutions"];
-const difficulties = [
-  { label: "Easy", count: "12,315", color: "bg-emerald" },
-  { label: "Medium", count: "45,672", color: "bg-gold" },
-  { label: "Hard", count: "26,890", color: "bg-red-500" },
-];
-const examTypes = ["NSTC", "INO", "IOP", "IPhO", "Other Olympiads"];
+const tabs = ["All Questions", "MCQs", "Long Problems", "Past Papers", "Bookmarked"];
 
-export function QuestionBankClient() {
-  const [topic, setTopic] = useState(questionTopics[0].title);
-  const [questionIndex, setQuestionIndex] = useState(0);
+export function QuestionBankClient({ questions }: { questions: Question[] }) {
+  const subjects = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => question.subject))).sort()], [questions]);
+  const years = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => String(question.year)))).sort()], [questions]);
+  const exams = useMemo(() => ["All", ...Array.from(new Set(questions.map((question) => question.exam))).sort()], [questions]);
+  const [subject, setSubject] = useState("All");
+  const [year, setYear] = useState("All");
+  const [exam, setExam] = useState("All");
+  const [type, setType] = useState("All Questions");
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showSolution, setShowSolution] = useState(false);
-  const question = sampleQuestions[questionIndex];
 
-  const filteredTopics = useMemo(() => questionTopics, []);
+  const filtered = useMemo(() => {
+    return questions.filter((question) => {
+      const matchesSubject = subject === "All" || question.subject === subject;
+      const matchesYear = year === "All" || String(question.year) === year;
+      const matchesExam = exam === "All" || question.exam === exam;
+      const matchesType =
+        type === "All Questions" ||
+        (type === "MCQs" && question.type === "MCQ") ||
+        (type === "Long Problems" && question.type === "Long") ||
+        (type === "Past Papers" && Boolean(question.paperId)) ||
+        type === "Bookmarked";
+      const matchesQuery = !query.trim() || `${question.prompt} ${question.source} ${question.topic}`.toLowerCase().includes(query.toLowerCase());
+      return matchesSubject && matchesYear && matchesExam && matchesType && matchesQuery;
+    });
+  }, [exam, query, questions, subject, type, year]);
 
-  function pickQuestion(index: number) {
-    setQuestionIndex(index);
+  const active = filtered[activeIndex] ?? filtered[0] ?? questions[0];
+  const topicCards = useMemo(() => {
+    const map = new Map<string, { subject: string; count: number; mcq: number; long: number }>();
+    for (const question of questions) {
+      const key = `${question.subject}:${question.topic}`;
+      const current = map.get(key) ?? { subject: question.subject, count: 0, mcq: 0, long: 0 };
+      current.count += 1;
+      if (question.type === "MCQ") current.mcq += 1;
+      else current.long += 1;
+      map.set(key, current);
+    }
+    return Array.from(map.entries()).slice(0, 8);
+  }, [questions]);
+
+  function moveTo(index: number) {
+    setActiveIndex(Math.max(0, Math.min(filtered.length - 1, index)));
     setSelectedAnswer(null);
     setShowSolution(false);
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px_1fr_320px]">
+    <div className="grid gap-6 lg:grid-cols-[280px_1fr_320px]">
       <aside className="card-surface rounded-md p-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-sm font-black uppercase text-charcoal">Filters</h2>
-          <button className="text-xs font-black text-emerald" type="button">
+          <button
+            className="text-xs font-black text-emerald"
+            type="button"
+            onClick={() => {
+              setSubject("All");
+              setYear("All");
+              setExam("All");
+              setQuery("");
+            }}
+          >
             Clear all
           </button>
         </div>
-
         <div className="space-y-5">
-          <label className="block">
-            <span className="text-sm font-bold text-charcoal">Subject</span>
-            <select className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-semibold text-charcoal">
-              <option>All Subjects</option>
-              <option>Physics</option>
-              <option>Chemistry</option>
-              <option>Mathematics</option>
-            </select>
-          </label>
+          <Select label="Subject" value={subject} values={subjects} onChange={setSubject} />
+          <Select label="Exam" value={exam} values={exams} onChange={setExam} />
+          <Select label="Year" value={year} values={years} onChange={setYear} />
           <label className="flex items-center gap-2 rounded-md border border-navy/10 bg-white px-3 py-2 text-sm text-charcoal/60">
-            <input className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Search topics..." />
+            <input className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Search prompts, topics, papers..." value={query} onChange={(event) => setQuery(event.target.value)} />
             <Icon name="search" className="h-4 w-4" />
           </label>
-          <label className="block">
-            <span className="text-sm font-bold text-charcoal">Topic</span>
-            <select className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-semibold text-charcoal" value={topic} onChange={(event) => setTopic(event.target.value)}>
-              {questionTopics.map((item) => (
-                <option key={item.title}>{item.title}</option>
-              ))}
-            </select>
-          </label>
           <div>
-            <h3 className="text-sm font-bold text-charcoal">Difficulty</h3>
-            <div className="mt-2 space-y-2">
-              {difficulties.map((difficulty) => (
-                <label key={difficulty.label} className="flex items-center justify-between text-sm text-charcoal/75">
-                  <span className="flex items-center gap-2">
-                    <span className={cn("h-3 w-3 rounded-sm", difficulty.color)} />
-                    {difficulty.label}
-                  </span>
-                  <span>{difficulty.count}</span>
-                </label>
-              ))}
+            <h3 className="text-sm font-bold text-charcoal">Available Content</h3>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+              <Metric label="Questions" value={questions.length} />
+              <Metric label="Visible" value={filtered.length} />
+              <Metric label="MCQs" value={questions.filter((question) => question.type === "MCQ").length} />
+              <Metric label="Long" value={questions.filter((question) => question.type === "Long").length} />
             </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-charcoal">Exam Type</h3>
-            <div className="mt-2 space-y-2">
-              {examTypes.map((exam, index) => (
-                <label key={exam} className="flex items-center justify-between text-sm text-charcoal/75">
-                  <span className="flex items-center gap-2">
-                    <input type="checkbox" defaultChecked={index === 0} />
-                    {exam}
-                  </span>
-                  <span>{[34210, 12045, 10510, 8230, 20315][index].toLocaleString()}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <button className="w-full rounded-md bg-emerald px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald/20" type="button">
-            Apply Filters
-          </button>
         </div>
       </aside>
 
@@ -102,43 +102,42 @@ export function QuestionBankClient() {
               <button
                 key={tab}
                 type="button"
+                onClick={() => {
+                  setType(tab);
+                  moveTo(0);
+                }}
                 className={cn(
                   "flex min-h-12 items-center justify-center gap-2 border-r border-navy/10 px-3 text-sm font-black text-charcoal last:border-r-0",
-                  index === 0 && "bg-emerald text-white",
+                  type === tab && "bg-emerald text-white",
                 )}
               >
-                <Icon name={index === 0 ? "list-checks" : index === 1 ? "book-open" : "bookmark"} className="h-4 w-4" />
+                <Icon name={index === 0 ? "list-checks" : index === 2 ? "book-open" : "bookmark"} className="h-4 w-4" />
                 {tab}
               </button>
             ))}
           </div>
           <div className="p-5">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-charcoal/70">Showing 1-12 of 12,560 questions</p>
-              <select className="rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-bold text-charcoal">
-                <option>Most Relevant</option>
-                <option>Newest</option>
-                <option>Hardest</option>
-              </select>
+              <p className="text-sm font-semibold text-charcoal/70">Showing {filtered.length.toLocaleString()} extracted questions</p>
+              <div className="flex gap-2">
+                <button className="rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-black text-charcoal" onClick={() => moveTo(activeIndex - 1)} type="button">
+                  Previous
+                </button>
+                <button className="rounded-md bg-emerald px-3 py-2 text-sm font-black text-white" onClick={() => moveTo(activeIndex + 1)} type="button">
+                  Next
+                </button>
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {filteredTopics.slice(0, 4).map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => setTopic(item.title)}
-                  type="button"
-                  className={cn("rounded-md border p-4 text-left transition", item.title === topic ? "border-emerald bg-mint" : "border-navy/10 bg-white")}
-                >
-                  <Icon name={item.icon} className="h-8 w-8 text-emerald" />
-                  <h3 className="mt-3 font-black text-charcoal">{item.title}</h3>
-                  <p className="text-sm text-charcoal/70">{item.subject}</p>
+              {topicCards.map(([key, value]) => (
+                <button key={key} type="button" onClick={() => setSubject(value.subject)} className="rounded-md border border-navy/10 bg-white p-4 text-left transition hover:border-emerald/40 hover:bg-mint">
+                  <Icon name={value.subject === "Mathematics" ? "pi" : value.subject === "Chemistry" ? "flask" : value.subject === "Biology" ? "dna" : "atom"} className="h-8 w-8 text-emerald" />
+                  <h3 className="mt-3 font-black text-charcoal">{key.split(":")[1]}</h3>
+                  <p className="text-sm text-charcoal/70">{value.subject}</p>
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-charcoal/70">
-                    <span>{item.questions} Questions</span>
-                    <span>{item.attempts} Attempts</span>
-                    <span>Avg. {item.average}</span>
-                  </div>
-                  <div className="mt-3 h-2 rounded-full bg-cool">
-                    <div className="h-2 w-3/4 rounded-full bg-emerald" />
+                    <span>{value.count} total</span>
+                    <span>{value.mcq} MCQ</span>
+                    <span>{value.long} long</span>
                   </div>
                 </button>
               ))}
@@ -146,124 +145,113 @@ export function QuestionBankClient() {
           </div>
         </div>
 
-        <div className="card-surface rounded-md p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-black uppercase text-charcoal">Question Preview</h2>
-            <span className="text-sm font-bold text-charcoal/60">Q. ID: {question.id}</span>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[question.subject, question.topic, question.difficulty, question.exam].map((tag) => (
-              <Badge key={tag}>{tag}</Badge>
-            ))}
-          </div>
-          <p className="mt-5 text-base leading-8 text-charcoal">{question.prompt}</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {question.options.map((option, index) => {
-              const chosen = selectedAnswer === index;
-              const correct = showSolution && question.answer === index;
-              return (
-                <button
-                  key={option}
-                  onClick={() => setSelectedAnswer(index)}
-                  type="button"
-                  className={cn(
-                    "flex min-h-12 items-center gap-3 rounded-md border px-4 text-left text-sm font-bold transition",
-                    chosen ? "border-emerald bg-mint text-emerald" : "border-navy/10 bg-white text-charcoal",
-                    correct && "border-emerald bg-emerald text-white",
-                  )}
-                >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy/5 text-xs font-black">{String.fromCharCode(65 + index)}</span>
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-semibold text-charcoal/70">
-              Solved by 1,842 students. Your success rate: <span className="font-black text-emerald">72%</span>
-            </p>
-            <div className="flex gap-3">
+        {active && (
+          <div className="card-surface rounded-md p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-sm font-black uppercase text-charcoal">Question {active.number}</h2>
+              <span className="text-sm font-bold text-charcoal/60">{active.source}</span>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[active.subject, active.topic, active.difficulty, active.exam, String(active.year), active.type].map((tag) => (
+                <Badge key={tag}>{tag}</Badge>
+              ))}
+            </div>
+            <p className="mt-5 whitespace-pre-wrap text-base leading-8 text-charcoal">{active.prompt}</p>
+            {active.figure && (
+              <details className="mt-4 rounded-md border border-navy/10 bg-white p-3">
+                <summary className="cursor-pointer text-sm font-black text-emerald">Show source page / diagram</summary>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={active.figure} alt={`Source page for ${active.id}`} className="mt-3 w-full rounded-md border border-navy/10" />
+              </details>
+            )}
+            {active.options.length > 0 && (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {active.options.map((option, index) => (
+                    <button
+                    key={`${active.id}-${index}-${option}`}
+                    onClick={() => setSelectedAnswer(index)}
+                    type="button"
+                    className={cn(
+                      "flex min-h-12 items-center gap-3 rounded-md border px-4 text-left text-sm font-bold transition",
+                      selectedAnswer === index ? "border-emerald bg-mint text-emerald" : "border-navy/10 bg-white text-charcoal",
+                    )}
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy/5 text-xs font-black">{String.fromCharCode(65 + index)}</span>
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold text-charcoal/70">
+                Extracted from {active.paperId ? "past paper" : "problem set"} content. Page {active.page ?? "n/a"}.
+              </p>
               <button
                 onClick={() => setShowSolution((value) => !value)}
-                className="inline-flex items-center gap-2 rounded-md border border-navy/10 bg-white px-5 py-2.5 text-sm font-black text-charcoal"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald px-5 py-2.5 text-sm font-black text-white"
                 type="button"
               >
                 <Icon name="eye" className="h-4 w-4" />
-                {showSolution ? "Hide Solution" : "View Solution"}
-              </button>
-              <button
-                onClick={() => pickQuestion((questionIndex + 1) % sampleQuestions.length)}
-                className="inline-flex items-center gap-2 rounded-md bg-emerald px-5 py-2.5 text-sm font-black text-white"
-                type="button"
-              >
-                Solve Now
-                <Icon name="chevron" className="h-4 w-4" />
+                {showSolution ? "Hide Solution" : "Reveal Solution"}
               </button>
             </div>
+            {showSolution && (
+              <div className="mt-5 rounded-md border border-emerald/20 bg-mint p-4">
+                <h3 className="font-black text-emerald">Solution</h3>
+                <p className="mt-2 text-sm leading-7 text-charcoal/80">
+                  {active.solution || "A reviewed solution has not been added yet. Admins can attach official solutions or contributor explanations from the dashboard."}
+                </p>
+              </div>
+            )}
           </div>
-          {showSolution && (
-            <div className="mt-5 rounded-md border border-emerald/20 bg-mint p-4">
-              <h3 className="font-black text-emerald">Solution</h3>
-              <p className="mt-2 text-sm leading-7 text-charcoal/80">{question.solution}</p>
-            </div>
-          )}
-        </div>
+        )}
       </section>
 
       <aside className="space-y-5">
         <div className="card-surface rounded-md p-5">
           <h2 className="flex items-center gap-2 text-sm font-black uppercase text-charcoal">
-            <Icon name="sparkles" className="h-5 w-5 text-gold" /> Your Streak
+            <Icon name="sparkles" className="h-5 w-5 text-gold" /> Ingested Corpus
           </h2>
-          <div className="mt-4 text-5xl font-black text-emerald">12 days</div>
-          <p className="mt-1 text-sm font-semibold text-charcoal/70">Keep it going.</p>
-          <div className="mt-5 grid grid-cols-7 gap-2">
-            {"MTWTFSS".split("").map((day) => (
-              <div key={day} className="text-center text-xs font-black text-charcoal/60">
-                <span>{day}</span>
-                <span className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-emerald text-white">
-                  <Icon name="check" className="h-3 w-3" />
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 h-2 rounded-full bg-cool">
-            <div className="h-2 w-[86%] rounded-full bg-emerald" />
-          </div>
-        </div>
-
-        <div className="card-surface rounded-md p-5">
-          <h2 className="flex items-center gap-2 text-sm font-black uppercase text-charcoal">
-            <Icon name="trophy" className="h-5 w-5 text-gold" /> Top Practitioners
-          </h2>
-          <div className="mt-4 space-y-3">
-            {["Ahmad R.", "Zainab K.", "Muhammad H.", "Sarah A.", "Ali M."].map((name, index) => (
-              <div key={name} className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 font-bold text-charcoal">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mint text-xs text-emerald">{index + 1}</span>
-                  {name}
-                </span>
-                <span className="font-black text-charcoal/70">{4250 - index * 390} pts</span>
+          <div className="mt-4 grid gap-3">
+            {subjects.slice(1).map((item) => (
+              <div key={item} className="flex items-center justify-between rounded-md border border-navy/10 bg-white px-3 py-2">
+                <span className="text-sm font-bold text-charcoal">{item}</span>
+                <span className="text-sm font-black text-emerald">{questions.filter((question) => question.subject === item).length}</span>
               </div>
             ))}
           </div>
         </div>
-
         <div className="card-surface rounded-md p-5">
-          <h2 className="text-sm font-black uppercase text-charcoal">Recent community solutions</h2>
-          <div className="mt-4 space-y-3 text-sm">
-            {["Kinematics - Projectile Motion", "Stoichiometry - Limiting Reagent", "Number Theory - Congruences"].map((item) => (
-              <div key={item} className="flex items-center gap-3">
-                <Icon name="book-open" className="h-5 w-5 text-emerald" />
-                <div>
-                  <p className="font-bold text-charcoal">{item}</p>
-                  <p className="text-xs text-charcoal/60">Solved by community</p>
-                </div>
-              </div>
-            ))}
+          <h2 className="text-sm font-black uppercase text-charcoal">Contributor Workflow</h2>
+          <div className="mt-4 space-y-3 text-sm text-charcoal/75">
+            <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Extracted questions are ready for review.</p>
+            <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Source page images preserve diagrams.</p>
+            <p className="flex gap-2"><Icon name="check" className="h-5 w-5 text-emerald" /> Solutions can be added by admins.</p>
           </div>
         </div>
       </aside>
+    </div>
+  );
+}
+
+function Select({ label, value, values, onChange }: { label: string; value: string; values: string[]; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="text-sm font-bold text-charcoal">{label}</span>
+      <select className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-semibold text-charcoal" value={value} onChange={(event) => onChange(event.target.value)}>
+        {values.map((item) => (
+          <option key={item}>{item}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-navy/10 bg-white p-3">
+      <div className="text-xl font-black text-emerald">{value.toLocaleString()}</div>
+      <div className="text-xs font-bold text-charcoal/60">{label}</div>
     </div>
   );
 }

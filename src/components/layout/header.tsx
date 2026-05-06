@@ -47,10 +47,10 @@ export function Header() {
             <Icon name="sun" className="h-5 w-5" />
           </button>
           <Link
-            href="/admin/dashboard"
+            href="/guides/ioaa-pakistan-guide"
             className="rounded-md bg-emerald px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald/20 transition hover:bg-teal"
           >
-            Login / Sign up
+            IOAA Guide
           </Link>
         </div>
       </div>

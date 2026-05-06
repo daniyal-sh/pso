@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { Badge } from "@/components/sections/common";
-import { pastPaperQuestion } from "@/lib/data";
+import type { PastPaper, Question } from "@/lib/content-data";
 import { cn } from "@/lib/utils";
 
 function formatTime(seconds: number) {
@@ -13,12 +14,13 @@ function formatTime(seconds: number) {
   return [hours, minutes, secs].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
-export function PastPaperPractice() {
-  const [seconds, setSeconds] = useState(6088);
+export function PastPaperPractice({ paper, questions, papers }: { paper: PastPaper; questions: Question[]; papers: PastPaper[] }) {
+  const [seconds, setSeconds] = useState(Math.max(3600, questions.length * 90));
   const [paused, setPaused] = useState(false);
-  const [current, setCurrent] = useState(13);
-  const [selected, setSelected] = useState<number | null>(1);
-  const [marked, setMarked] = useState(new Set([18]));
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(new Set<string>());
+  const [marked, setMarked] = useState(new Set<string>());
   const [showSolution, setShowSolution] = useState(false);
   const [scratchpad, setScratchpad] = useState("");
   const [hints, setHints] = useState(2);
@@ -29,41 +31,63 @@ export function PastPaperPractice() {
     return () => window.clearInterval(id);
   }, [paused]);
 
-  const answered = useMemo(() => new Set(Array.from({ length: 12 }, (_, index) => index + 1)), []);
+  const current = questions[currentIndex] ?? questions[0];
+  const progress = questions.length ? Math.round((answered.size / questions.length) * 100) : 0;
+  const relatedPapers = useMemo(() => papers.filter((item) => item.id !== paper.id && item.subject === paper.subject).slice(0, 4), [paper.id, paper.subject, papers]);
 
-  function toggleMark(questionNumber: number) {
+  function chooseAnswer(index: number) {
+    if (!current) return;
+    setSelected(index);
+    setAnswered((previous) => new Set(previous).add(current.id));
+    setShowSolution(false);
+  }
+
+  function goTo(index: number) {
+    setCurrentIndex(Math.max(0, Math.min(questions.length - 1, index)));
+    setSelected(null);
+    setShowSolution(false);
+  }
+
+  function toggleMark(id: string) {
     setMarked((previous) => {
       const next = new Set(previous);
-      if (next.has(questionNumber)) next.delete(questionNumber);
-      else next.add(questionNumber);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
+  }
+
+  if (!current) {
+    return (
+      <div className="card-surface rounded-md p-8 text-center">
+        <h2 className="font-display text-3xl font-bold text-charcoal">No extracted questions yet</h2>
+        <p className="mt-2 text-charcoal/70">This paper is available as a resource, but question extraction did not produce reviewable items.</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="card-surface rounded-md p-5">
-        <div className="grid gap-4 lg:grid-cols-[1fr_0.55fr_0.8fr_0.7fr]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_0.7fr_0.8fr_0.7fr]">
           <label>
-            <span className="text-xs font-black uppercase text-charcoal">Exam</span>
-            <select className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-3 text-sm font-bold text-charcoal">
-              <option>NSTC (National Science Talent Contest)</option>
+            <span className="text-xs font-black uppercase text-charcoal">Paper</span>
+            <select
+              className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-3 text-sm font-bold text-charcoal"
+              value={paper.id}
+              onChange={(event) => {
+                window.location.href = `/past-papers/${event.target.value}`;
+              }}
+            >
+              {papers.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
             </select>
           </label>
-          <label>
-            <span className="text-xs font-black uppercase text-charcoal">Year</span>
-            <select className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-3 text-sm font-bold text-charcoal">
-              <option>2023</option>
-              <option>2022</option>
-            </select>
-          </label>
-          <label>
-            <span className="text-xs font-black uppercase text-charcoal">Subject</span>
-            <select className="mt-2 w-full rounded-md border border-navy/10 bg-white px-3 py-3 text-sm font-bold text-charcoal">
-              <option>Physics</option>
-              <option>Chemistry</option>
-            </select>
-          </label>
+          <InfoBox label="Time Remaining" value={formatTime(seconds)} icon="timer" action={() => setPaused((value) => !value)} />
+          <InfoBox label="Progress" value={`${answered.size} / ${questions.length}`} icon="clipboard-check" />
           <div>
             <span className="text-xs font-black uppercase text-charcoal">Mode</span>
             <div className="mt-2 grid grid-cols-2 overflow-hidden rounded-md border border-navy/10">
@@ -71,105 +95,80 @@ export function PastPaperPractice() {
                 Practice
               </button>
               <button className="bg-white px-3 py-3 text-sm font-black text-charcoal" type="button">
-                Exam Simulation
+                Review
               </button>
             </div>
           </div>
         </div>
-        <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr_1.1fr]">
-          <div className="rounded-md border border-navy/10 bg-white p-4">
-            <p className="text-xs font-black uppercase text-charcoal/60">Time Remaining</p>
-            <div className="mt-2 flex items-center gap-3">
-              <Icon name="timer" className="h-6 w-6 text-navy" />
-              <span className="font-mono text-3xl font-black text-charcoal">{formatTime(seconds)}</span>
-              <button
-                className="ml-auto flex h-10 w-10 items-center justify-center rounded-md bg-mint text-emerald"
-                onClick={() => setPaused((value) => !value)}
-                type="button"
-                aria-label="Pause timer"
-              >
-                <Icon name="pause" className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-          <div className="rounded-md border border-navy/10 bg-white p-4">
-            <p className="text-xs font-black uppercase text-charcoal/60">Progress</p>
-            <div className="mt-2 flex items-end justify-between">
-              <span className="text-lg font-black text-charcoal">12 / 40 Questions</span>
-              <span className="text-sm font-black text-emerald">30%</span>
-            </div>
-            <div className="mt-3 h-2 rounded-full bg-cool">
-              <div className="h-2 w-[30%] rounded-full bg-emerald" />
-            </div>
-          </div>
-          <div className="rounded-md border border-navy/10 bg-white p-4">
-            <p className="text-xs font-black uppercase text-charcoal/60">Session</p>
-            <div className="mt-2 grid grid-cols-3 gap-3 text-sm">
-              <span><b className="text-charcoal">12</b><br />Attempted</span>
-              <span><b className="text-charcoal">75%</b><br />Accuracy</span>
-              <span><b className="text-charcoal">Auto</b><br />Save</span>
-            </div>
-          </div>
+        <div className="mt-5 h-2 rounded-full bg-cool">
+          <div className="h-2 rounded-full bg-emerald" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_0.65fr]">
         <section className="card-surface rounded-md">
           <div className="flex flex-wrap items-center gap-3 border-b border-navy/10 p-5">
-            <Badge>Question {current}</Badge>
-            <span className="text-sm font-bold text-charcoal/70">{pastPaperQuestion.difficulty}</span>
-            <span className="text-sm font-bold text-charcoal/70">{pastPaperQuestion.marks} Marks</span>
-            <span className="text-sm font-bold text-charcoal/70">{pastPaperQuestion.type}</span>
-            <button className="ml-auto flex items-center gap-2 text-sm font-black text-charcoal" onClick={() => toggleMark(current)} type="button">
-              <Icon name="bookmark" className={cn("h-4 w-4", marked.has(current) && "text-gold")} />
+            <Badge>Question {current.number}</Badge>
+            <span className="text-sm font-bold text-charcoal/70">{current.type}</span>
+            <span className="text-sm font-bold text-charcoal/70">{current.difficulty}</span>
+            <span className="text-sm font-bold text-charcoal/70">Page {current.page ?? "n/a"}</span>
+            <button className="ml-auto flex items-center gap-2 text-sm font-black text-charcoal" onClick={() => toggleMark(current.id)} type="button">
+              <Icon name="bookmark" className={cn("h-4 w-4", marked.has(current.id) && "text-gold")} />
               Mark for Review
             </button>
           </div>
           <div className="p-6">
-            <p className="text-lg font-medium leading-8 text-charcoal">{pastPaperQuestion.prompt}</p>
-            <div className="my-8 flex min-h-56 items-center justify-center rounded-md bg-white">
-              <div className="relative h-52 w-full max-w-md">
-                <div className="absolute bottom-10 left-16 h-32 border-l-4 border-charcoal/80" />
-                <div className="absolute bottom-10 left-16 h-px w-64 border-t-4 border-dashed border-charcoal/50" />
-                <div className="absolute bottom-10 left-16 h-1 w-72 origin-left -rotate-[28deg] bg-charcoal/80" />
-                <div className="absolute bottom-[150px] left-20 h-12 w-12 rounded-full border-2 border-charcoal/70 bg-gradient-to-br from-white to-cool shadow-lg" />
-                <span className="absolute bottom-20 left-8 font-black text-charcoal">H</span>
-                <span className="absolute bottom-12 right-20 font-black text-charcoal">theta</span>
-              </div>
-            </div>
-            <p className="text-lg font-medium leading-8 text-charcoal">{pastPaperQuestion.ask}</p>
-            <div className="mt-5 space-y-3">
-              {pastPaperQuestion.options.map((option, index) => (
-                <button
-                  key={option}
-                  onClick={() => {
-                    setSelected(index);
-                    setShowSolution(false);
-                  }}
-                  className={cn(
-                    "flex min-h-14 w-full items-center gap-4 rounded-md border px-5 text-left font-bold transition",
-                    selected === index ? "border-emerald bg-mint text-emerald" : "border-navy/10 bg-white text-charcoal",
+            <p className="whitespace-pre-wrap text-lg font-medium leading-8 text-charcoal">{current.prompt}</p>
+            {current.figure && (
+              <div className="my-6 rounded-md border border-navy/10 bg-white p-3">
+                <div className="mb-2 flex items-center justify-between text-sm font-black text-charcoal">
+                  <span>Source page / diagram reference</span>
+                  {paper.resourceUrl && (
+                    <Link href={paper.resourceUrl} className="text-emerald" target="_blank">
+                      Open PDF
+                    </Link>
                   )}
-                  type="button"
-                >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-navy/15 text-sm">{String.fromCharCode(65 + index)}</span>
-                  <span className="font-mono text-base">{option}</span>
-                </button>
-              ))}
-            </div>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={current.figure} alt={`Question ${current.number} source page`} className="max-h-[720px] w-full rounded-md object-contain" />
+              </div>
+            )}
+            {current.options.length > 0 ? (
+              <div className="mt-5 space-y-3">
+                {current.options.map((option, index) => (
+                  <button
+                    key={`${current.id}-${index}-${option}`}
+                    onClick={() => chooseAnswer(index)}
+                    className={cn(
+                      "flex min-h-14 w-full items-center gap-4 rounded-md border px-5 text-left font-bold transition",
+                      selected === index ? "border-emerald bg-mint text-emerald" : "border-navy/10 bg-white text-charcoal",
+                    )}
+                    type="button"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-navy/15 text-sm">{String.fromCharCode(65 + index)}</span>
+                    <span>{option}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-md border border-navy/10 bg-white p-4">
+                <label className="text-sm font-black text-charcoal">Answer Area</label>
+                <textarea className="mt-3 min-h-36 w-full rounded-md border border-navy/10 p-4 outline-none focus:border-emerald" placeholder="Write your descriptive solution..." />
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-3 border-t border-navy/10 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <button className="rounded-md border border-navy/10 bg-white px-5 py-3 text-sm font-black text-charcoal" type="button">
+            <Link href="/past-papers" className="rounded-md border border-navy/10 bg-white px-5 py-3 text-center text-sm font-black text-charcoal">
               Save & Exit
-            </button>
+            </Link>
             <button className="rounded-md border border-red-200 bg-red-50 px-5 py-3 text-sm font-black text-red-600" onClick={() => setSelected(null)} type="button">
               Clear Answer
             </button>
             <div className="flex gap-3 sm:ml-auto">
-              <button className="rounded-md border border-navy/10 bg-white px-5 py-3 text-sm font-black text-charcoal" onClick={() => setCurrent(Math.max(1, current - 1))} type="button">
+              <button className="rounded-md border border-navy/10 bg-white px-5 py-3 text-sm font-black text-charcoal" onClick={() => goTo(currentIndex - 1)} type="button">
                 Previous
               </button>
-              <button className="rounded-md bg-emerald px-5 py-3 text-sm font-black text-white" onClick={() => setCurrent(Math.min(40, current + 1))} type="button">
+              <button className="rounded-md bg-emerald px-5 py-3 text-sm font-black text-white" onClick={() => goTo(currentIndex + 1)} type="button">
                 Next Question
               </button>
             </div>
@@ -181,23 +180,23 @@ export function PastPaperPractice() {
             <h2 className="flex items-center gap-2 text-sm font-black uppercase text-charcoal">
               <Icon name="calculator" className="h-5 w-5 text-emerald" /> Question Navigator
             </h2>
-            <div className="mt-4 grid grid-cols-10 gap-2">
-              {Array.from({ length: 40 }, (_, index) => index + 1).map((number) => {
-                const isAnswered = answered.has(number);
-                const isCurrent = number === current;
+            <div className="mt-4 grid grid-cols-8 gap-2 sm:grid-cols-10">
+              {questions.map((question, index) => {
+                const isAnswered = answered.has(question.id);
+                const isCurrent = question.id === current.id;
                 return (
                   <button
-                    key={number}
-                    onClick={() => setCurrent(number)}
+                    key={`${question.id}-${index}`}
+                    onClick={() => goTo(index)}
                     className={cn(
                       "flex h-9 items-center justify-center rounded-md border text-sm font-black",
                       isAnswered ? "border-emerald bg-emerald text-white" : "border-navy/10 bg-white text-charcoal",
                       isCurrent && "ring-2 ring-emerald ring-offset-2",
-                      marked.has(number) && "border-gold bg-gold/20 text-charcoal",
+                      marked.has(question.id) && "border-gold bg-gold/20 text-charcoal",
                     )}
                     type="button"
                   >
-                    {marked.has(number) ? <Icon name="star" className="h-4 w-4" /> : number}
+                    {marked.has(question.id) ? <Icon name="star" className="h-4 w-4" /> : question.number}
                   </button>
                 );
               })}
@@ -210,28 +209,16 @@ export function PastPaperPractice() {
             </h2>
             <textarea
               className="mt-4 min-h-36 w-full resize-none rounded-md border border-navy/10 bg-white p-4 text-sm outline-none focus:border-emerald"
-              placeholder="Write, draw, or calculate..."
+              placeholder="Write, calculate, or draft a proof..."
               value={scratchpad}
               onChange={(event) => setScratchpad(event.target.value)}
             />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <button className="card-surface rounded-md p-4 text-left" onClick={() => setHints((value) => Math.max(0, value - 1))} type="button">
-              <Icon name="lightbulb" className="h-6 w-6 text-navy" />
-              <p className="mt-2 text-sm font-black text-charcoal">Hints</p>
-              <p className="text-xs font-bold text-emerald">{hints} left</p>
-            </button>
-            <button className="card-surface rounded-md p-4 text-left" type="button">
-              <Icon name="book-open" className="h-6 w-6 text-navy" />
-              <p className="mt-2 text-sm font-black text-charcoal">Formula Sheet</p>
-              <p className="text-xs font-bold text-emerald">View</p>
-            </button>
-            <button className="card-surface rounded-md p-4 text-left" type="button">
-              <Icon name="calculator" className="h-6 w-6 text-navy" />
-              <p className="mt-2 text-sm font-black text-charcoal">Calculator</p>
-              <p className="text-xs font-bold text-emerald">Open</p>
-            </button>
+            <ToolButton icon="lightbulb" title="Hints" meta={`${hints} left`} onClick={() => setHints((value) => Math.max(0, value - 1))} />
+            <ToolButton icon="book-open" title="Formula Sheet" meta="Open" />
+            <ToolButton icon="calculator" title="Calculator" meta="Open" />
           </div>
 
           <div className="rounded-md border border-navy/10 bg-gradient-to-br from-white to-mint p-5">
@@ -239,27 +226,58 @@ export function PastPaperPractice() {
               <Icon name="eye" className="h-5 w-5 text-navy" /> View Solution
             </h2>
             {showSolution ? (
-              <p className="mt-3 text-sm leading-7 text-charcoal/80">{pastPaperQuestion.solution}</p>
+              <p className="mt-3 text-sm leading-7 text-charcoal/80">{current.solution || "A reviewed solution has not been attached yet. Use the admin dashboard to add official or contributor solutions."}</p>
             ) : (
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-charcoal/70">{selected === null ? "Answer the question to unlock the solution." : "Solution is ready to reveal."}</p>
-                <button
-                  className="rounded-md bg-emerald px-4 py-2.5 text-sm font-black text-white disabled:bg-cool disabled:text-charcoal/60"
-                  disabled={selected === null}
-                  onClick={() => setShowSolution(true)}
-                  type="button"
-                >
+                <p className="text-sm text-charcoal/70">Reveal the solution panel after attempting the problem.</p>
+                <button className="rounded-md bg-emerald px-4 py-2.5 text-sm font-black text-white" onClick={() => setShowSolution(true)} type="button">
                   Reveal Solution
                 </button>
               </div>
             )}
           </div>
 
-          <div className="rounded-md border border-emerald/15 bg-mint p-4 text-sm font-bold text-charcoal">
-            Tip: Use the formula sheet and hints wisely to improve your score.
-          </div>
+          {relatedPapers.length > 0 && (
+            <div className="card-surface rounded-md p-5">
+              <h2 className="text-sm font-black uppercase text-charcoal">Related {paper.subject} Papers</h2>
+              <div className="mt-4 space-y-2">
+                {relatedPapers.map((item) => (
+                  <Link key={item.id} href={`/past-papers/${item.id}`} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
+                    {item.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
       </div>
     </div>
+  );
+}
+
+function InfoBox({ label, value, icon, action }: { label: string; value: string; icon: string; action?: () => void }) {
+  return (
+    <div className="rounded-md border border-navy/10 bg-white p-4">
+      <p className="text-xs font-black uppercase text-charcoal/60">{label}</p>
+      <div className="mt-2 flex items-center gap-3">
+        <Icon name={icon} className="h-6 w-6 text-navy" />
+        <span className="font-mono text-2xl font-black text-charcoal">{value}</span>
+        {action && (
+          <button className="ml-auto flex h-10 w-10 items-center justify-center rounded-md bg-mint text-emerald" onClick={action} type="button" aria-label="Pause timer">
+            <Icon name="pause" className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ToolButton({ icon, title, meta, onClick }: { icon: string; title: string; meta: string; onClick?: () => void }) {
+  return (
+    <button className="card-surface rounded-md p-4 text-left" onClick={onClick} type="button">
+      <Icon name={icon} className="h-6 w-6 text-navy" />
+      <p className="mt-2 text-sm font-black text-charcoal">{title}</p>
+      <p className="text-xs font-bold text-emerald">{meta}</p>
+    </button>
   );
 }

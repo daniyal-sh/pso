@@ -1,11 +1,13 @@
 import { QuestionBankClient } from "@/components/interactive/question-bank-client";
 import { Container, PageHero, StatStrip } from "@/components/sections/common";
+import { getQuestionStats, questions } from "@/lib/content-data";
 
 export const metadata = {
   title: "Question Bank",
 };
 
 export default function QuestionBankPage() {
+  const stats = getQuestionStats();
   return (
     <>
       <PageHero
@@ -13,15 +15,15 @@ export default function QuestionBankPage() {
         subtitle="Topic-wise practice for NSTC and olympiads. Solve curated MCQs, reveal detailed solutions, and build momentum."
         variant="question-bank"
         stats={[
-          { label: "Questions", value: "85,000+", icon: "clipboard-check" },
-          { label: "Practice Sets", value: "12,500+", icon: "route" },
-          { label: "Topics", value: "250+", icon: "book-open" },
-          { label: "Students Practicing", value: "20,000+", icon: "users" },
+          { label: "Extracted Questions", value: stats.total.toLocaleString(), icon: "clipboard-check" },
+          { label: "MCQs", value: stats.mcqs.toLocaleString(), icon: "list-checks" },
+          { label: "Long Problems", value: stats.long.toLocaleString(), icon: "book-open" },
+          { label: "Source Papers", value: stats.papers.toLocaleString(), icon: "file-text" },
         ]}
       />
       <section className="py-8">
         <Container>
-          <QuestionBankClient />
+          <QuestionBankClient questions={questions} />
         </Container>
       </section>
       <StatStrip

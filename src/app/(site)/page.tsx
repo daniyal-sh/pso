@@ -1,8 +1,19 @@
 import { AlumniCard, BlogCard, ResourceCard, TrackCard, Pathway } from "@/components/sections/cards";
 import { ButtonLink, Container, PageHero, SectionTitle, StatStrip } from "@/components/sections/common";
-import { alumniStories, blogPosts, featuredResources, pathwaySteps, platformStats, tracks } from "@/lib/data";
+import { alumniStories, blogPosts, featuredResources, pathwaySteps, tracks } from "@/lib/data";
+import { getQuestionStats, getResourceStats, pastPapers } from "@/lib/content-data";
 
 export default function HomePage() {
+  const questionStats = getQuestionStats();
+  const resourceStats = getResourceStats();
+  const liveStats = [
+    { label: "Indexed Resources", value: `${resourceStats.total}+`, icon: "book-open" },
+    { label: "Extracted Questions", value: `${questionStats.total}+`, icon: "clipboard-check" },
+    { label: "Past Papers", value: `${pastPapers.length}`, icon: "file-text" },
+    { label: "Contributors", value: "Open", icon: "users" },
+    { label: "Olympiad Tracks", value: "6", icon: "sparkles" },
+    { label: "Guide Articles", value: "15+", icon: "trophy" },
+  ];
   return (
     <>
       <PageHero
@@ -50,7 +61,7 @@ export default function HomePage() {
         </Container>
       </section>
 
-      <StatStrip stats={platformStats} />
+      <StatStrip stats={liveStats} />
 
       <section className="py-8">
         <Container>

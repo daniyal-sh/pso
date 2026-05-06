@@ -1,13 +1,21 @@
 import { Icon } from "@/components/icon";
 
 function renderInline(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong key={`${part}-${index}`} className="font-black text-charcoal">
           {part.slice(2, -2)}
         </strong>
+      );
+    }
+    const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      return (
+        <a key={`${part}-${index}`} className="font-bold text-emerald underline-offset-4 hover:underline" href={link[2]} target={link[2].startsWith("http") ? "_blank" : undefined}>
+          {link[1]}
+        </a>
       );
     }
     return part;
@@ -55,8 +63,8 @@ export function MarkdownRenderer({ content }: { content: string }) {
       );
       return;
     }
-    if (line.startsWith("- ")) {
-      list.push(line.replace("- ", ""));
+    if (line.startsWith("- ") || /^\d+\.\s+/.test(line)) {
+      list.push(line.replace(/^- /, "").replace(/^\d+\.\s+/, ""));
       return;
     }
     if (line.trim().length === 0) {
