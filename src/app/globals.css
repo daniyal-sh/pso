@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf8;
+  --foreground: #1a1e26;
+  --midnight-navy: #0b1520;
+  --emerald-green: #0f6b4f;
+  --deep-teal: #138a7e;
+  --mint-light: #e7f4ef;
+  --warm-gold: #f4c24a;
+  --ivory-white: #fafaf8;
+  --cool-gray: #e2e6ea;
+  --charcoal: #1a1e26;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-navy: var(--midnight-navy);
+  --color-emerald: var(--emerald-green);
+  --color-teal: var(--deep-teal);
+  --color-mint: var(--mint-light);
+  --color-gold: var(--warm-gold);
+  --color-ivory: var(--ivory-white);
+  --color-cool: var(--cool-gray);
+  --color-charcoal: var(--charcoal);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-cormorant);
+  --font-mono: var(--font-jetbrains);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+::selection {
+  background: rgba(244, 194, 74, 0.35);
+}
+
+.font-display {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+.premium-shadow {
+  box-shadow:
+    0 24px 60px rgba(11, 21, 32, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.dark-panel {
+  background:
+    radial-gradient(circle at 18% 22%, rgba(19, 138, 126, 0.32), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(244, 194, 74, 0.18), transparent 28%),
+    linear-gradient(135deg, #061117 0%, #0b2a2d 45%, #071a24 100%);
+}
+
+.science-field {
+  position: relative;
+  overflow: hidden;
+}
+
+.science-field::before {
+  background-image:
+    radial-gradient(circle, rgba(244, 194, 74, 0.55) 1px, transparent 1.5px),
+    linear-gradient(90deg, rgba(226, 230, 234, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(226, 230, 234, 0.08) 1px, transparent 1px);
+  background-size: 64px 64px, 84px 84px, 84px 84px;
+  content: "";
+  inset: 0;
+  opacity: 0.45;
+  position: absolute;
+}
+
+.science-field::after {
+  background:
+    radial-gradient(circle at 70% 20%, rgba(244, 194, 74, 0.28), transparent 9%),
+    radial-gradient(circle at 40% 78%, rgba(19, 138, 126, 0.22), transparent 17%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.gold-glow {
+  box-shadow: 0 0 0 1px rgba(244, 194, 74, 0.32), 0 20px 44px rgba(244, 194, 74, 0.14);
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(rgba(11, 21, 32, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 21, 32, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.card-surface {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(11, 21, 32, 0.1);
+  box-shadow: 0 14px 38px rgba(11, 21, 32, 0.08);
+}
+
+.admin-grid {
+  background-image:
+    linear-gradient(rgba(226, 230, 234, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 230, 234, 0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+}

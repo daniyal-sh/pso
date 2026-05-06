@@ -1,0 +1,82 @@
+import { notFound } from "next/navigation";
+import { Icon } from "@/components/icon";
+import { Pathway } from "@/components/sections/cards";
+import { Badge, ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
+import { pathwaySteps, tracks } from "@/lib/data";
+
+export function generateStaticParams() {
+  return tracks.map((track) => ({ slug: track.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const track = tracks.find((item) => item.slug === slug);
+  return {
+    title: track ? `${track.name} Olympiad Track` : "Olympiad Track",
+  };
+}
+
+export default async function TrackDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const track = tracks.find((item) => item.slug === slug);
+  if (!track) notFound();
+
+  return (
+    <>
+      <PageHero
+        title={`${track.name} olympiad`}
+        subtitle={track.summary}
+        kicker={`${track.exam} preparation`}
+        stats={[
+          { label: "Learners", value: track.stats[0].split(" ")[0], icon: "graduation-cap" },
+          { label: "Resources", value: track.stats[1].split(" ")[0], icon: "book-open" },
+          { label: "Questions", value: track.stats[2].split(" ")[0], icon: "clipboard-check" },
+          { label: "Roadmap", value: "Ready", icon: "route" },
+        ]}
+      />
+
+      <section className="py-10">
+        <Container className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <SectionTitle title="Preparation outcomes" copy="A compact first pass for track pages, designed to grow into backend-powered roadmaps." />
+            <div className="grid gap-4 sm:grid-cols-3">
+              {track.outcomes.map((outcome) => (
+                <div key={outcome} className="card-surface rounded-md p-5">
+                  <Icon name="check" className="h-6 w-6 text-emerald" />
+                  <p className="mt-3 text-sm font-bold leading-6 text-charcoal">{outcome}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <aside className="card-surface rounded-md p-6">
+            <Badge>{track.exam}</Badge>
+            <h2 className="mt-4 font-display text-3xl font-bold text-charcoal">Core topics</h2>
+            <div className="mt-5 grid gap-3">
+              {track.topics.map((topic) => (
+                <div key={topic} className="flex items-center justify-between rounded-md border border-navy/10 bg-white px-4 py-3">
+                  <span className="text-sm font-bold text-charcoal">{topic}</span>
+                  <Icon name={track.icon} className="h-5 w-5 text-emerald" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink href="/question-bank" variant="light">
+                Practice now
+              </ButtonLink>
+              <ButtonLink href="/guides" variant="light" icon="book-open">
+                Read guides
+              </ButtonLink>
+            </div>
+          </aside>
+        </Container>
+      </section>
+
+      <section className="pb-10">
+        <Container className="mb-4">
+          <SectionTitle title="Selection pathway" />
+        </Container>
+        <Pathway steps={pathwaySteps} />
+      </section>
+    </>
+  );
+}
