@@ -63,6 +63,12 @@ The current corpus contains imported IOAA/NSTC guides, resource PDFs where Googl
 
 This app is Vercel-ready. Set environment variables from `.env.example`, then deploy with the Vercel Next.js preset.
 
+The admin dashboard requires Supabase. Run the migration in `supabase/migrations`, configure the storage buckets and Auth redirect URLs, then run `npm run db:seed` to import the current blog, guide, resource, past-paper, and question corpus. Production verification should pass:
+
+```bash
+npm run verify
+```
+
 ## Resource Ingestion
 
 The one-time ingestion helper is `scripts/ingest_resources.py`. It expects downloaded source files in `.tmp/resource-ingest`, copies allowed public assets into `public/resources`, renders past-paper page images into `public/paper-assets`, and regenerates the JSON data files. Temporary downloads are intentionally excluded from git.

@@ -54,12 +54,12 @@ export function PastPapersBrowser({ papers }: { papers: PastPaper[] }) {
             <h2 className="mt-4 text-lg font-black text-charcoal">{paper.title}</h2>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-charcoal/60">
               <span>{paper.pages} pages</span>
-              <span>{paper.mcqCount} MCQs</span>
-              <span>{paper.partICount} common</span>
-              <span>{paper.partIICount} subject</span>
+              <span>70 MCQ slots</span>
+              <span>20 common</span>
+              <span>50 subject</span>
             </div>
             <div className="mt-5 flex items-center gap-2 text-sm font-black text-emerald">
-              Practice paper
+              Open paper viewer
               <Icon name="chevron" className="h-4 w-4 transition group-hover:translate-x-1" />
             </div>
           </Link>

@@ -1,14 +1,14 @@
 import { GuidesBrowser } from "@/components/interactive/guides-browser";
 import { Badge, ButtonLink, Container, PageHero } from "@/components/sections/common";
 import { getQuestionStats } from "@/lib/content-data";
-import { getAllGuides } from "@/lib/guides";
+import { getPublishedGuides } from "@/lib/public-content";
 
 export const metadata = {
   title: "Guides",
 };
 
-export default function GuidesPage() {
-  const guides = getAllGuides();
+export default async function GuidesPage() {
+  const guides = await getPublishedGuides();
   const featured = guides.find((guide) => guide.featured) ?? guides[0];
   const questionStats = getQuestionStats();
 

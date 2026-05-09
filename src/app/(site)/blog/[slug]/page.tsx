@@ -2,15 +2,16 @@ import { notFound } from "next/navigation";
 import { BlogCard } from "@/components/sections/cards";
 import { MarkdownRenderer } from "@/components/sections/markdown-renderer";
 import { Badge, ButtonLink, Container, PageHero } from "@/components/sections/common";
-import { blogPosts } from "@/lib/data";
+import { getPublishedBlogPostBySlug, getPublishedBlogPosts, getPublishedBlogSlugs } from "@/lib/public-content";
 
-export function generateStaticParams() {
-  return blogPosts.map((post) => ({ slug: post.slug }));
+export async function generateStaticParams() {
+  const slugs = await getPublishedBlogSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = blogPosts.find((item) => item.slug === slug);
+  const post = await getPublishedBlogPostBySlug(slug);
   return {
     title: post?.title ?? "Blog Post",
     description: post?.excerpt,
@@ -19,8 +20,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = blogPosts.find((item) => item.slug === slug);
+  const post = await getPublishedBlogPostBySlug(slug);
   if (!post) notFound();
+  const blogPosts = await getPublishedBlogPosts();
   const related = blogPosts.filter((item) => item.slug !== post.slug).slice(0, 2);
 
   return (

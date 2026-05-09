@@ -1,12 +1,13 @@
 import { BlogCard } from "@/components/sections/cards";
 import { Container, PageHero, SectionTitle } from "@/components/sections/common";
-import { blogPosts } from "@/lib/data";
+import { getPublishedBlogPosts } from "@/lib/public-content";
 
 export const metadata = {
   title: "Blog",
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const blogPosts = await getPublishedBlogPosts();
   const authors = new Set(blogPosts.map((post) => post.author));
   const videos = blogPosts.filter((post) => post.videoId).length;
 

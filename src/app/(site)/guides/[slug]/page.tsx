@@ -2,15 +2,16 @@ import { notFound } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { Badge, ButtonLink, Container, PageHero } from "@/components/sections/common";
 import { MarkdownRenderer } from "@/components/sections/markdown-renderer";
-import { getAllGuides, getGuideBySlug, getGuideSlugs } from "@/lib/guides";
+import { getPublishedGuideBySlug, getPublishedGuides, getPublishedGuideSlugs } from "@/lib/public-content";
 
-export function generateStaticParams() {
-  return getGuideSlugs().map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  const slugs = await getPublishedGuideSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+  const guide = await getPublishedGuideBySlug(slug);
   return {
     title: guide?.title ?? "Guide",
     description: guide?.description,
@@ -19,9 +20,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function GuideDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+  const guide = await getPublishedGuideBySlug(slug);
   if (!guide) notFound();
-  const related = getAllGuides().filter((item) => item.slug !== guide.slug).slice(0, 3);
+  const related = (await getPublishedGuides()).filter((item) => item.slug !== guide.slug).slice(0, 3);
 
   return (
     <>
