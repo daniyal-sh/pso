@@ -355,7 +355,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                 onClick={shuffleQuestions}
                 type="button"
               >
-                <Icon name="sparkles" className="h-4 w-4 text-gold" />
+                <Icon name="shuffle" className="h-4 w-4 text-gold" />
                 Shuffle
               </button>
               <button
