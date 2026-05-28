@@ -2,9 +2,9 @@
 
 import { useActionState } from "react";
 import { saveModeratorAccessAction } from "@/app/admin/actions";
-import { adminSubjects, type ModeratorAdminItem } from "@/lib/admin/types";
+import { adminSubjects, type ActionState, type ModeratorAdminItem } from "@/lib/admin/types";
 
-const initialState = { ok: false, message: "" };
+const initialState: ActionState = { ok: false, message: "" };
 
 export function ModeratorAccessForm({ member }: { member?: ModeratorAdminItem | null }) {
   const [state, action, pending] = useActionState(saveModeratorAccessAction, initialState);
@@ -61,6 +61,11 @@ export function ModeratorAccessForm({ member }: { member?: ModeratorAdminItem | 
         {pending ? "Saving..." : member ? "Update access" : "Add moderator"}
       </button>
       {state.message ? <span className={state.ok ? "ml-3 text-sm font-bold text-emerald" : "ml-3 text-sm font-bold text-red-200"}>{state.message}</span> : null}
+      {state.fieldErrors ? (
+        <div className="mt-4 space-y-1 text-xs font-bold text-red-200">
+          {Object.entries(state.fieldErrors).map(([field, errors]) => errors?.length ? <p key={field}>{field}: {errors.join(", ")}</p> : null)}
+        </div>
+      ) : null}
     </form>
   );
 }

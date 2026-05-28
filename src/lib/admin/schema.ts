@@ -175,7 +175,7 @@ export const questionFormSchema = z.object({
 }));
 
 export const moderatorAccessSchema = z.object({
-  memberId: z.string().uuid().optional(),
+  memberId: z.preprocess(emptyStringToUndefined, z.string().uuid().optional()),
   email: z.string().trim().email().transform((value) => value.toLowerCase()),
   displayName: z.string().trim().min(2).max(120),
   status: z.enum(adminMemberStatuses).default("active"),

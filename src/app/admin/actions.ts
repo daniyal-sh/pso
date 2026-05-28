@@ -12,10 +12,12 @@ import { createSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supa
 const initialError = "Something went wrong. Please try again.";
 
 function zodError(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }): ActionState {
+  const fieldErrors = error.flatten().fieldErrors;
+  const firstError = Object.entries(fieldErrors).find(([, errors]) => errors?.length);
   return {
     ok: false,
-    message: "Please fix the highlighted fields.",
-    fieldErrors: error.flatten().fieldErrors,
+    message: firstError ? `${firstError[0]}: ${firstError[1]?.[0]}` : "Please fix the highlighted fields.",
+    fieldErrors,
   };
 }
 
