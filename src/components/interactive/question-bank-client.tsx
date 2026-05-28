@@ -524,6 +524,26 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
             <p className="mt-2 text-sm font-semibold text-charcoal/65">Try another subject or practice mode.</p>
           </div>
         )}
+
+        <section className="rounded-md border border-navy/10 bg-white p-4 shadow-sm" data-testid="desmos-scientific">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-sm font-black uppercase text-charcoal">
+                <Icon name="calculator" className="h-5 w-5 text-emerald" /> Desmos Scientific
+              </h2>
+              <p className="mt-1 text-xs font-bold text-charcoal/60">Use the embedded scientific calculator for quick computations.</p>
+            </div>
+            <a href="https://www.desmos.com/scientific" target="_blank" rel="noreferrer" className="shrink-0 rounded-md border border-navy/10 px-3 py-2 text-xs font-black text-emerald hover:border-emerald/40">
+              Open
+            </a>
+          </div>
+          <iframe
+            className="mt-4 h-[360px] w-full rounded-md border border-navy/10 bg-white sm:h-[390px]"
+            src="https://www.desmos.com/scientific?embed"
+            title="Desmos scientific calculator"
+            loading="lazy"
+          />
+        </section>
       </section>
     </div>
   );

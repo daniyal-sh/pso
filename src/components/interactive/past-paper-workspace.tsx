@@ -16,7 +16,6 @@ type AttemptState = {
   mcqAnswers: Record<string, AnswerChoice | null>;
   descriptiveAnswer: string;
   descriptiveSolutionFileName: string;
-  scratchpad: string;
   activeQuestion: number | null;
   timerSecondsRemaining: number;
   timerRunning: boolean;
@@ -51,7 +50,6 @@ function createInitialAttempt(paper: PastPaper): AttemptState {
     mcqAnswers: createEmptyAnswers(),
     descriptiveAnswer: "",
     descriptiveSolutionFileName: "",
-    scratchpad: "",
     activeQuestion: null,
     timerSecondsRemaining: PAST_PAPER_TIMER_SECONDS,
     timerRunning: false,
@@ -468,18 +466,6 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
                 );
               })}
             </div>
-          </section>
-
-          <section className="rounded-md border border-navy/10 bg-white p-4 shadow-sm">
-            <h2 className="flex items-center gap-2 text-sm font-black uppercase text-charcoal">
-              <Icon name="pen" className="h-5 w-5 text-navy" /> Scratchpad
-            </h2>
-            <textarea
-              className="mt-4 min-h-36 w-full resize-y rounded-md border border-navy/10 bg-ivory p-4 text-sm outline-none focus:border-emerald"
-              placeholder="Draft calculations, eliminations, or reminders..."
-              value={attempt.scratchpad}
-              onChange={(event) => updateAttempt((previous) => ({ ...previous, scratchpad: event.target.value }))}
-            />
           </section>
 
           <section className="rounded-md border border-navy/10 bg-white p-4 shadow-sm" data-testid="desmos-scientific">
