@@ -4,8 +4,8 @@ import { Icon } from "@/components/icon";
 import { Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
 import { pathwaySteps, tracks } from "@/lib/data";
-import { pastPapers, questions, resources } from "@/lib/content-data";
-import { getAllGuides } from "@/lib/guides";
+import { getPublishedGuides } from "@/lib/public-content";
+import { getPublishedPastPapers, getPublishedQuestions, getPublishedResources } from "@/lib/public-datasets";
 
 export function generateStaticParams() {
   return tracks.map((track) => ({ slug: track.slug }));
@@ -23,10 +23,16 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const track = tracks.find((item) => item.slug === slug);
   if (!track) notFound();
+  const [questions, pastPapers, resources, guides] = await Promise.all([
+    getPublishedQuestions(),
+    getPublishedPastPapers(),
+    getPublishedResources(),
+    getPublishedGuides(),
+  ]);
   const subjectQuestions = questions.filter((question) => question.subject === track.name);
   const subjectPapers = pastPapers.filter((paper) => paper.subject === track.name);
   const subjectResources = resources.filter((resource) => resource.subject === track.name || (track.name === "Astronomy" && resource.subject === "IOAA"));
-  const subjectGuides = getAllGuides()
+  const subjectGuides = guides
     .filter((guide) => guide.category === track.name || (guide.tags ?? []).includes(track.name))
     .slice(0, 4);
 

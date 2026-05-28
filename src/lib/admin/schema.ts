@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { contentKinds, contentStatuses } from "@/lib/admin/types";
+import { adminRoles, contentKinds, contentStatuses } from "@/lib/admin/types";
 
 const emptyStringToUndefined = (value: unknown) => (value === "" ? undefined : value);
 const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
@@ -105,4 +105,78 @@ export const transitionSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(contentStatuses),
   note: z.string().trim().max(500).optional().default(""),
+});
+
+const optionalNumber = z.preprocess(emptyStringToUndefined, z.coerce.number().finite().optional());
+const nullableNumber = z.preprocess((value) => (value === "" ? null : value), z.coerce.number().finite().nullable());
+const resourcePath = z.string().trim().max(700).optional().default("");
+
+export const resourceFormSchema = z.object({
+  id: z.string().trim().min(3).max(180),
+  status: z.enum(contentStatuses).default("published"),
+  title: z.string().trim().min(3).max(240),
+  description: z.string().trim().max(800).optional().default(""),
+  subject: z.string().trim().min(2).max(80),
+  kind: z.string().trim().min(2).max(80),
+  folder: z.string().trim().max(160).optional().default(""),
+  year: nullableNumber.optional().default(null),
+  pages: optionalNumber.default(0),
+  sizeBytes: optionalNumber.default(0),
+  localUrl: resourcePath,
+  sourceUrl: resourcePath,
+});
+
+export const pastPaperFormSchema = z.object({
+  id: z.string().trim().min(3).max(220),
+  status: z.enum(contentStatuses).default("published"),
+  title: z.string().trim().min(3).max(240),
+  exam: z.string().trim().min(2).max(80).default("NSTC"),
+  subject: z.string().trim().min(2).max(80),
+  year: z.coerce.number().int().min(1900).max(2100),
+  pages: optionalNumber.default(0),
+  resourceUrl: resourcePath,
+  sourceUrl: resourcePath,
+  scanned: z.coerce.boolean().default(false),
+  pageImages: z.string().optional().default(""),
+  questionCount: optionalNumber.default(0),
+  mcqCount: optionalNumber.default(0),
+  descriptiveCount: optionalNumber.default(0),
+  partICount: optionalNumber.default(0),
+  partIICount: optionalNumber.default(0),
+}).transform((value) => ({
+  ...value,
+  pageImages: value.pageImages.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+}));
+
+export const questionFormSchema = z.object({
+  id: z.string().trim().min(3).max(260),
+  status: z.enum(contentStatuses).default("published"),
+  paperId: z.string().trim().max(220).optional().default(""),
+  paperSubject: z.string().trim().max(80).optional().default(""),
+  number: z.coerce.number().int().min(1).max(999),
+  displayNumber: z.string().trim().max(80).optional().default(""),
+  subject: z.string().trim().min(2).max(80),
+  topic: z.string().trim().max(120).optional().default(""),
+  difficulty: z.string().trim().max(120).optional().default(""),
+  type: z.enum(["MCQ", "Long"]).default("MCQ"),
+  section: z.string().trim().max(80).optional().default(""),
+  sectionTitle: z.string().trim().max(120).optional().default(""),
+  exam: z.string().trim().max(80).optional().default("NSTC"),
+  year: nullableNumber.optional().default(null),
+  source: z.string().trim().max(240).optional().default(""),
+  prompt: z.string().trim().min(3),
+  options: z.string().optional().default(""),
+  answer: nullableNumber.optional().default(null),
+  solution: z.string().trim().optional().default(""),
+  page: nullableNumber.optional().default(null),
+  figure: resourcePath,
+}).transform((value) => ({
+  ...value,
+  options: value.options.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+}));
+
+export const contributorRoleSchema = z.object({
+  userId: z.string().uuid(),
+  role: z.enum(adminRoles),
+  requireMfa: z.coerce.boolean().default(true),
 });

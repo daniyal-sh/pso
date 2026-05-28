@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import { ResourcesBrowser } from "@/components/interactive/resources-browser";
 import { Container, PageHero } from "@/components/sections/common";
-import { getResourceStats, resources } from "@/lib/content-data";
+import { getPublishedResources, getResourceStatsForRows } from "@/lib/public-datasets";
 
 export const metadata = {
   title: "Resources",
 };
 
-export default function ResourcesPage() {
-  const stats = getResourceStats();
+export default async function ResourcesPage() {
+  const resources = await getPublishedResources();
+  const stats = getResourceStatsForRows(resources);
 
   return (
     <>

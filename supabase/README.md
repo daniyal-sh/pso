@@ -11,13 +11,28 @@ This project expects Supabase for the secure admin dashboard.
    - `http://localhost:3000/admin`
    - `https://pakistanolympiads.com/admin`
 5. Add Vercel environment variables from `.env.example`.
-6. Seed current repository content:
+6. Seed current repository content. The API-based option is:
 
 ```bash
 npm run db:seed
 ```
 
 The seed command needs `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+
+If you prefer to seed through the Supabase SQL Editor instead, generate SQL files locally:
+
+```bash
+npm run db:seed:sql
+```
+
+Then run the generated files in `supabase/seeds/` in filename order:
+
+1. `001_content.sql`
+2. `002_resources.sql`
+3. `003_past_papers.sql`
+4. `004_questions_001.sql` through `004_questions_008.sql`
+
+These SQL files are idempotent: re-running them updates existing seeded rows instead of creating duplicates.
 
 ## Security Notes
 

@@ -3,13 +3,18 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { loginSchema, contentFormSchema, inviteSignupSchema, transitionSchema } from "@/lib/admin/schema";
+import { loginSchema, contentFormSchema, contributorRoleSchema, inviteSignupSchema, pastPaperFormSchema, questionFormSchema, resourceFormSchema, transitionSchema } from "@/lib/admin/schema";
 import type { ActionState } from "@/lib/admin/types";
 import { getAdminContext, requireAdmin } from "@/lib/admin/auth";
-import { saveContentItem, transitionContentItem } from "@/lib/admin/content";
+import { saveContentItem, saveContributorRole, savePastPaperItem, saveQuestionItem, saveResourceItem, transitionContentItem } from "@/lib/admin/content";
 import { createSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 
 const initialError = "Something went wrong. Please try again.";
+
+function getAdminRedirectUrl() {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "https://pakistanolympiads.com" : "")).replace(/\/+$/, "");
+  return appUrl ? `${appUrl}/admin` : undefined;
+}
 
 function zodError(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }): ActionState {
   return {
@@ -65,6 +70,7 @@ export async function inviteSignupAction(_: ActionState, formData: FormData): Pr
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
+      emailRedirectTo: getAdminRedirectUrl(),
       data: {
         display_name: parsed.data.displayName,
       },
@@ -167,4 +173,58 @@ export async function transitionContentFormAction(formData: FormData) {
   const context = await getAdminContext();
   const parsed = transitionSchema.parse(Object.fromEntries(formData));
   await transitionContentItem(parsed.id, parsed.status, parsed.note, context);
+}
+
+export async function saveResourceAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const context = await requireAdmin(["owner", "editor"]);
+  const parsed = resourceFormSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return zodError(parsed.error);
+  try {
+    const result = await saveResourceItem(parsed.data, context);
+    return { ok: true, message: `Saved resource ${result.id}.` };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : initialError };
+  }
+}
+
+export async function savePastPaperAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const context = await requireAdmin(["owner", "editor"]);
+  const parsed = pastPaperFormSchema.safeParse({
+    ...Object.fromEntries(formData),
+    scanned: formData.get("scanned") === "on",
+  });
+  if (!parsed.success) return zodError(parsed.error);
+  try {
+    const result = await savePastPaperItem(parsed.data, context);
+    return { ok: true, message: `Saved past paper ${result.id}.` };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : initialError };
+  }
+}
+
+export async function saveQuestionAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const context = await requireAdmin(["owner", "editor", "contributor"]);
+  const parsed = questionFormSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return zodError(parsed.error);
+  try {
+    const result = await saveQuestionItem(parsed.data, context);
+    return { ok: true, message: `Saved question ${result.id}.` };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : initialError };
+  }
+}
+
+export async function saveContributorRoleAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const context = await requireAdmin(["owner"]);
+  const parsed = contributorRoleSchema.safeParse({
+    ...Object.fromEntries(formData),
+    requireMfa: formData.get("requireMfa") === "on",
+  });
+  if (!parsed.success) return zodError(parsed.error);
+  try {
+    const id = await saveContributorRole(parsed.data, context);
+    return { ok: true, message: `Updated contributor ${id}.` };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : initialError };
+  }
 }

@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "audit:prod": "npm audit --omit=dev",
     "verify": "npm run typecheck && npm run lint && npm run build && npm run audit:prod",
-    "db:seed": "tsx scripts/seed_supabase_content.ts"
+    "db:seed": "tsx scripts/seed_supabase_content.ts",
+    "db:seed:sql": "tsx scripts/generate_supabase_seed_sql.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

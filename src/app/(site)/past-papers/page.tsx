@@ -1,12 +1,13 @@
 import { PastPapersBrowser } from "@/components/interactive/past-papers-browser";
 import { ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
-import { pastPapers, questions } from "@/lib/content-data";
+import { getPublishedPastPapers, getPublishedQuestions } from "@/lib/public-datasets";
 
 export const metadata = {
   title: "Past Papers",
 };
 
-export default function PastPapersPage() {
+export default async function PastPapersPage() {
+  const [pastPapers, questions] = await Promise.all([getPublishedPastPapers(), getPublishedQuestions()]);
   const totalQuestions = questions.filter((question) => question.paperId).length;
   const latest = [...pastPapers].sort((a, b) => b.year - a.year)[0];
 

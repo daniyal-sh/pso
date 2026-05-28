@@ -1,12 +1,13 @@
 import { QuestionBankClient } from "@/components/interactive/question-bank-client";
 import { Container } from "@/components/sections/common";
-import { questions } from "@/lib/content-data";
+import { getPublishedQuestions } from "@/lib/public-datasets";
 
 export const metadata = {
   title: "Question Bank",
 };
 
-export default function QuestionBankPage() {
+export default async function QuestionBankPage() {
+  const questions = await getPublishedQuestions();
   const questionBankQuestions = questions.filter((question) => question.exam === "NSTC" && question.paperId && question.section !== "Resource");
   const partI = questionBankQuestions.filter((question) => question.section === "Part I").length;
   const partII = questionBankQuestions.filter((question) => question.section === "Part II").length;

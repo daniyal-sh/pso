@@ -1,13 +1,21 @@
 import { AlumniCard, BlogCard, ResourceCard, TrackCard, Pathway } from "@/components/sections/cards";
 import { ButtonLink, Container, PageHero, SectionTitle, StatStrip } from "@/components/sections/common";
-import { alumniStories, blogPosts, featuredResources, pathwaySteps, tracks } from "@/lib/data";
-import { getQuestionStats, getResourceStats, pastPapers } from "@/lib/content-data";
-import { getAllGuides } from "@/lib/guides";
+import { featuredResources, pathwaySteps, tracks } from "@/lib/data";
+import { getPublishedAlumniStories, getPublishedBlogPosts, getPublishedGuides } from "@/lib/public-content";
+import { getPublishedPastPapers, getPublishedQuestions, getPublishedResources, getQuestionStatsForRows, getResourceStatsForRows } from "@/lib/public-datasets";
 
-export default function HomePage() {
-  const questionStats = getQuestionStats();
-  const resourceStats = getResourceStats();
-  const guideCount = getAllGuides().length;
+export default async function HomePage() {
+  const [blogPosts, guides, alumniStories, resources, pastPapers, questions] = await Promise.all([
+    getPublishedBlogPosts(),
+    getPublishedGuides(),
+    getPublishedAlumniStories(),
+    getPublishedResources(),
+    getPublishedPastPapers(),
+    getPublishedQuestions(),
+  ]);
+  const questionStats = getQuestionStatsForRows(questions);
+  const resourceStats = getResourceStatsForRows(resources);
+  const guideCount = guides.length;
   const liveStats = [
     { label: "Indexed Resources", value: `${resourceStats.total}+`, icon: "book-open" },
     { label: "Extracted Questions", value: `${questionStats.total}+`, icon: "clipboard-check" },

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { unstable_cache } from "next/cache";
-import { blogPosts } from "@/lib/data";
+import { alumniStories, blogPosts } from "@/lib/data";
 import { getAllGuides, getGuideBySlug, getGuideSlugs, type Guide } from "@/lib/guides";
 import { getSupabaseConfig, getSupabaseServiceClient } from "@/lib/supabase/server";
 import type { ContentKind, ContentStatus } from "@/lib/admin/types";
@@ -18,6 +18,15 @@ export type PublicBlogPost = {
   videoId: string;
   videoTitle: string;
   content: string;
+};
+
+export type PublicAlumniStory = {
+  name: string;
+  achievement: string;
+  subject: string;
+  location: string;
+  quote: string;
+  role: string;
 };
 
 type PublishedContentRow = {
@@ -112,8 +121,19 @@ const getCachedPublishedRows = unstable_cache(queryPublishedRows, ["published-co
 
 export async function getPublishedBlogPosts() {
   const rows = await getCachedPublishedRows("blog_post");
-  if (!rows?.length) return blogPosts;
+  if (!rows) return blogPosts;
   return rows.map(rowToBlogPost);
+}
+
+function rowToAlumniStory(row: PublishedContentRow): PublicAlumniStory {
+  return {
+    name: row.title,
+    achievement: String(row.metadata?.achievement || row.category || "Olympiad Alumni"),
+    subject: String(row.metadata?.subject || row.category || "Olympiads"),
+    location: String(row.metadata?.location || ""),
+    quote: row.excerpt || row.body,
+    role: String(row.metadata?.role || row.author_name),
+  };
 }
 
 export async function getPublishedBlogPostBySlug(slug: string) {
@@ -128,19 +148,25 @@ export async function getPublishedBlogSlugs() {
 
 export async function getPublishedGuides() {
   const rows = await getCachedPublishedRows("guide");
-  if (!rows?.length) return getAllGuides();
+  if (!rows) return getAllGuides();
   return rows.map(rowToGuide).sort((a, b) => Number(b.featured) - Number(a.featured) || a.title.localeCompare(b.title));
 }
 
 export async function getPublishedGuideBySlug(slug: string) {
   const rows = await getCachedPublishedRows("guide");
-  if (!rows?.length) return getGuideBySlug(slug);
+  if (!rows) return getGuideBySlug(slug);
   const row = rows.find((item) => item.slug === slug);
   return row ? rowToGuide(row) : null;
 }
 
 export async function getPublishedGuideSlugs() {
   const rows = await getCachedPublishedRows("guide");
-  if (!rows?.length) return getGuideSlugs();
+  if (!rows) return getGuideSlugs();
   return rows.map((row) => row.slug);
+}
+
+export async function getPublishedAlumniStories() {
+  const rows = await getCachedPublishedRows("alumni_story");
+  if (!rows) return alumniStories;
+  return rows.map(rowToAlumniStory);
 }

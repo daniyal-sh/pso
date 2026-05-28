@@ -1,12 +1,14 @@
 import { AlumniCard, BlogCard } from "@/components/sections/cards";
 import { ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
-import { alumniStories, blogPosts } from "@/lib/data";
+import { getPublishedAlumniStories, getPublishedBlogPosts } from "@/lib/public-content";
 
 export const metadata = {
   title: "Alumni and Community",
 };
 
-export default function AlumniPage() {
+export default async function AlumniPage() {
+  const [alumniStories, blogPosts] = await Promise.all([getPublishedAlumniStories(), getPublishedBlogPosts()]);
+
   return (
     <>
       <PageHero

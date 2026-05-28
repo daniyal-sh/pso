@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { blogPosts } from "../src/lib/data";
+import { alumniStories, blogPosts } from "../src/lib/data";
 import { getAllGuides } from "../src/lib/guides";
+import { resources as normalizedResources } from "../src/lib/content-data";
 
 type JsonRecord = Record<string, unknown>;
 type SupabaseResult<T = unknown> = {
@@ -26,6 +27,7 @@ type SupabaseSeeder = {
 };
 
 const root = path.resolve(__dirname, "..");
+const unsafeControlChars = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 function requiredEnv(name: string) {
   const value = process.env[name];
@@ -36,7 +38,20 @@ function requiredEnv(name: string) {
 }
 
 function readJson<T>(relativePath: string): T {
-  return JSON.parse(fs.readFileSync(path.join(root, relativePath), "utf8")) as T;
+  return cleanJsonValue(JSON.parse(fs.readFileSync(path.join(root, relativePath), "utf8"))) as T;
+}
+
+function cleanSeedText(value: string) {
+  return value.replace(unsafeControlChars, " ");
+}
+
+function cleanJsonValue(value: unknown): unknown {
+  if (typeof value === "string") return cleanSeedText(value);
+  if (Array.isArray(value)) return value.map((item) => cleanJsonValue(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cleanJsonValue(item)]));
+  }
+  return value;
 }
 
 function slugify(value: string) {
@@ -68,7 +83,7 @@ function assertOk<T>(label: string, result: SupabaseResult<unknown>) {
 async function upsertContent(
   supabase: SupabaseSeeder,
   item: {
-    kind: "blog_post" | "guide";
+    kind: "blog_post" | "guide" | "alumni_story";
     slug: string;
     title: string;
     excerpt: string;
@@ -186,8 +201,28 @@ async function main() {
     });
   }
 
-  const resources = readJson<JsonRecord[]>("src/data/resources.json");
-  for (const resource of resources) {
+  for (const story of alumniStories) {
+    await upsertContent(supabase, {
+      kind: "alumni_story",
+      slug: slugify(story.name),
+      title: story.name,
+      excerpt: story.quote,
+      body: story.quote,
+      category: story.subject,
+      authorName: "Pakistan Olympiads",
+      readTime: "2 min",
+      metadata: {
+        achievement: story.achievement,
+        subject: story.subject,
+        location: story.location,
+        role: story.role,
+        tags: [story.subject, "Alumni"],
+      },
+      publishedAt: new Date().toISOString(),
+    });
+  }
+
+  for (const resource of normalizedResources) {
     assertOk(
       `resource ${resource.id}`,
       await supabase.from("resources").upsert(
@@ -271,7 +306,7 @@ async function main() {
     );
   }
 
-  console.log(`Seeded ${blogPosts.length} blog posts, ${getAllGuides().length} guides, ${resources.length} resources, ${pastPapers.length} papers, and ${questions.length} questions.`);
+  console.log(`Seeded ${blogPosts.length} blog posts, ${getAllGuides().length} guides, ${alumniStories.length} alumni stories, ${normalizedResources.length} resources, ${pastPapers.length} papers, and ${questions.length} questions.`);
 }
 
 main().catch((error) => {
