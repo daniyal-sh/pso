@@ -1,5 +1,6 @@
 import { QuestionBankClient } from "@/components/interactive/question-bank-client";
 import { Container } from "@/components/sections/common";
+import { questionPdfMetadata } from "@/lib/question-pdf-paths";
 import { getPublishedQuestions } from "@/lib/public-datasets";
 
 export const metadata = {
@@ -8,11 +9,12 @@ export const metadata = {
 
 export default async function QuestionBankPage() {
   const questions = await getPublishedQuestions();
-  const questionBankQuestions = questions.filter((question) => question.exam === "NSTC" && question.paperId && question.section !== "Resource");
-  const partI = questionBankQuestions.filter((question) => question.section === "Part I").length;
-  const partII = questionBankQuestions.filter((question) => question.section === "Part II").length;
-  const descriptive = questionBankQuestions.filter((question) => question.section === "Part III").length;
-  const sourcePapers = new Set(questionBankQuestions.map((question) => question.paperId)).size;
+  const questionBankQuestions = questions.filter((question) => question.id in questionPdfMetadata);
+  const pdfRows = Object.values(questionPdfMetadata);
+  const partI = pdfRows.filter((question) => question.section === "Part I").length;
+  const partII = pdfRows.filter((question) => question.section === "Part II").length;
+  const descriptive = pdfRows.filter((question) => question.section === "Part III").length;
+  const sourcePapers = new Set(pdfRows.map((question) => question.paperId)).size;
 
   return (
     <main>
@@ -23,7 +25,7 @@ export default async function QuestionBankPage() {
               <p className="text-xs font-black uppercase text-gold">NSTC Practice</p>
               <h1 className="mt-2 font-display text-4xl font-bold leading-none sm:text-5xl">Question Bank</h1>
               <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-white/75 sm:text-base">
-                Randomized past-paper drills with common MCQs separated from subject MCQs.
+                Randomized drills from individual extracted NSTC question PDFs.
               </p>
             </div>
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">

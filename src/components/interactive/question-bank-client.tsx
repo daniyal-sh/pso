@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
 import { Badge } from "@/components/sections/common";
 import type { Question } from "@/lib/content-data";
-import { questionPdfPaths } from "@/lib/question-pdf-paths";
+import { questionPdfMetadata } from "@/lib/question-pdf-paths";
 import { cn } from "@/lib/utils";
 
 type PracticeMode = "Subject MCQs" | "Common MCQs" | "Descriptive";
@@ -28,6 +28,10 @@ const modes: { label: PracticeMode; section: string; icon: string; hint: string 
 
 const QUESTION_BANK_STORAGE_KEY = "pso:question-bank-progress:v1";
 const subjectOrder = ["Mathematics", "Physics", "Biology", "Chemistry"];
+type QuestionPdfMetadata = (typeof questionPdfMetadata)[keyof typeof questionPdfMetadata];
+type QuestionWithPdf = Question & {
+  pdf: QuestionPdfMetadata;
+};
 
 function sortSubjects(items: string[]) {
   return [...items].sort((a, b) => {
@@ -128,16 +132,26 @@ function formatSavedAt(value: string | null) {
   }).format(new Date(value));
 }
 
-function getQuestionPdfUrl(question: Question) {
-  const cropPath = questionPdfPaths[question.id as keyof typeof questionPdfPaths];
-  if (!cropPath) return null;
+function getQuestionPdfMetadata(question: Question) {
+  return questionPdfMetadata[question.id as keyof typeof questionPdfMetadata] ?? null;
+}
+
+function getQuestionPdfUrl(question: QuestionWithPdf) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) return null;
-  return `${supabaseUrl}/storage/v1/object/public/question-pdfs/${cropPath}`;
+  return `${supabaseUrl}/storage/v1/object/public/question-pdfs/${question.pdf.cropPath}`;
 }
 
 export function QuestionBankClient({ questions }: { questions: Question[] }) {
-  const subjects = useMemo(() => sortSubjects(Array.from(new Set(questions.map((question) => question.subject)))), [questions]);
+  const pdfQuestions = useMemo<QuestionWithPdf[]>(() => {
+    return questions
+      .map((question) => {
+        const pdf = getQuestionPdfMetadata(question);
+        return pdf ? ({ ...question, pdf } satisfies QuestionWithPdf) : null;
+      })
+      .filter((question): question is QuestionWithPdf => Boolean(question));
+  }, [questions]);
+  const subjects = useMemo(() => sortSubjects(Array.from(new Set(pdfQuestions.map((question) => question.pdf.subject)))), [pdfQuestions]);
   const [progress, setProgress] = useState<QuestionBankProgress>(() => createInitialProgress());
   const [hydrated, setHydrated] = useState(false);
   const { activeIndex, mode, shuffleSalt, subject } = progress;
@@ -145,25 +159,25 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const activeMode = modes.find((item) => item.label === mode) ?? modes[0];
   const subjectCards = useMemo(() => {
     return subjects.map((item) => {
-      const subjectQuestions = questions.filter((question) => question.subject === item);
+      const subjectQuestions = pdfQuestions.filter((question) => question.pdf.subject === item);
       return {
         subject: item,
-        subjectMcqs: subjectQuestions.filter((question) => question.section === "Part II").length,
-        commonMcqs: subjectQuestions.filter((question) => question.section === "Part I").length,
-        descriptive: subjectQuestions.filter((question) => question.section === "Part III").length,
+        subjectMcqs: subjectQuestions.filter((question) => question.pdf.section === "Part II").length,
+        commonMcqs: subjectQuestions.filter((question) => question.pdf.section === "Part I").length,
+        descriptive: subjectQuestions.filter((question) => question.pdf.section === "Part III").length,
       };
     });
-  }, [questions, subjects]);
+  }, [pdfQuestions, subjects]);
 
   const filtered = useMemo(() => {
-    return questions
+    return pdfQuestions
       .filter((question) => {
-        const matchesMode = question.section === activeMode.section;
-        const matchesSubject = mode === "Common MCQs" || subject === "All" || question.subject === subject;
+        const matchesMode = question.pdf.section === activeMode.section;
+        const matchesSubject = mode === "Common MCQs" || subject === "All" || question.pdf.subject === subject;
         return matchesMode && matchesSubject;
       })
       .sort((a, b) => hashQuestion(a.id, shuffleSalt) - hashQuestion(b.id, shuffleSalt));
-  }, [activeMode.section, mode, questions, shuffleSalt, subject]);
+  }, [activeMode.section, mode, pdfQuestions, shuffleSalt, subject]);
 
   const visibleActiveIndex = filtered.length > 0 ? Math.min(activeIndex, filtered.length - 1) : 0;
   const active = filtered[visibleActiveIndex] ?? null;
@@ -326,7 +340,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                   )}
                 >
                   All subjects
-                  <span>{questions.filter((question) => question.section === activeMode.section).length}</span>
+                  <span>{pdfQuestions.filter((question) => question.pdf.section === activeMode.section).length}</span>
                 </button>
                 {subjectCards.map((card) => {
                   const visibleCount = mode === "Subject MCQs" ? card.subjectMcqs : card.descriptive;
@@ -406,14 +420,14 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                   Question {visibleActiveIndex + 1} of {filtered.length}
                 </p>
                 <h3 className="mt-2 text-base font-black text-charcoal">
-                  {active.subject} {active.year}
+                  {active.pdf.subject} {active.pdf.year}
                 </h3>
                 <p className="mt-1 text-sm font-semibold text-charcoal/60">
-                  {active.sectionTitle} | Question {active.displayNumber ?? active.number}
+                  {active.pdf.section} | Question {active.pdf.displayNumber}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 lg:justify-end">
-                {[active.type].filter(Boolean).map((tag, index) => (
+                {[active.pdf.type].filter(Boolean).map((tag, index) => (
                   <Badge key={`${tag}-${index}`} className="bg-white">
                     {tag}
                   </Badge>
@@ -440,7 +454,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
               )}
             </div>
 
-            {active.options.length > 0 ? (
+            {active.pdf.type === "MCQ" ? (
               <div className="grid gap-3">
                 {["A", "B", "C", "D"].map((label, index) => (
                   <button
