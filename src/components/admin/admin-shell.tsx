@@ -10,13 +10,8 @@ const navItems = [
   { href: "/admin/posts", label: "Blog Posts", icon: "file-text", scope: "blog" },
   { href: "/admin/guides", label: "Guides", icon: "book-open", scope: "guide" },
   { href: "/admin/resources", label: "Resources", icon: "download", scope: "resources" },
-  { href: "/admin/past-papers", label: "Past Papers", icon: "file-text", scope: "owner" },
-  { href: "/admin/question-bank", label: "Question Bank", icon: "clipboard", scope: "owner" },
-  { href: "/admin/alumni", label: "Alumni Stories", icon: "users", scope: "owner" },
-  { href: "/admin/media", label: "Media Library", icon: "bookmark", scope: "resources" },
   { href: "/admin/contributors", label: "Access", icon: "users", scope: "owner" },
   { href: "/admin/analytics", label: "Analytics", icon: "activity", scope: "owner" },
-  { href: "/admin/audit", label: "Audit Logs", icon: "shield", scope: "owner" },
   { href: "/admin/settings", label: "Settings", icon: "shield", scope: "owner" },
 ];
 
@@ -64,7 +59,7 @@ export function AdminShell({
             <div className="relative z-10">
               <Icon name="shield" className="h-8 w-8 text-gold" />
               <h2 className="mt-6 text-lg font-black text-white">Secure editorial control</h2>
-              <p className="mt-2 text-sm leading-6 text-white/70">Every mutation is authorized server-side and written to the audit trail.</p>
+              <p className="mt-2 text-sm leading-6 text-white/70">Access is scoped by role and every save is authorized server-side.</p>
             </div>
           </div>
         </aside>

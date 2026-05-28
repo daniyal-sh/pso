@@ -6,6 +6,7 @@ import { adminSubjects, type ActionState, type AdminContext, type ContentStatus,
 
 const initialState: ActionState = { ok: false, message: "" };
 const statuses: ContentStatus[] = ["draft", "in_review", "changes_requested", "scheduled", "published", "archived"];
+const resourceKinds = ["Book", "Guide", "Handout", "Problem Set", "Solution", "Syllabus", "Formula Sheet", "Other"];
 
 function StatusField({ value = "published" }: { value?: ContentStatus }) {
   return (
@@ -71,8 +72,14 @@ export function ResourceEditor({ item, context }: { item?: ResourceAdminItem | n
   return (
     <form action={action} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
       <section className="rounded-md border border-white/10 bg-white/5 p-5">
+        <div className="mb-5">
+          <h2 className="text-xl font-black text-white">{item ? "Edit resource" : "Upload resource"}</h2>
+          <p className="mt-1 text-sm leading-6 text-white/60">
+            Upload a PDF or image, choose its subject, and publish it to the public Resources page. New resources can leave ID blank.
+          </p>
+        </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <TextField label="ID" name="id" value={item?.id} />
+          <input type="hidden" name="id" value={item?.id ?? ""} />
           <StatusField value={item?.status} />
           <TextField label="Title" name="title" value={item?.title} />
           <label className="block">
@@ -83,11 +90,18 @@ export function ResourceEditor({ item, context }: { item?: ResourceAdminItem | n
               ))}
             </select>
           </label>
-          <TextField label="Kind" name="kind" value={item?.kind} />
-          <TextField label="Folder" name="folder" value={item?.folder} />
+          <label className="block">
+            <span className="text-xs font-bold uppercase text-white/60">Kind</span>
+            <select name="kind" defaultValue={item?.kind ?? "Guide"} className="mt-2 w-full rounded-md border border-white/10 bg-[#061117] px-3 py-3 text-sm text-white outline-none focus:border-emerald">
+              {resourceKinds.map((kind) => (
+                <option key={kind}>{kind}</option>
+              ))}
+            </select>
+          </label>
+          <TextField label="Collection / folder" name="folder" value={item?.folder} />
           <TextField label="Year" name="year" value={item?.year} type="number" />
           <TextField label="Pages" name="pages" value={item?.pages ?? 0} type="number" />
-          <TextField label="Size bytes" name="sizeBytes" value={item?.sizeBytes ?? 0} type="number" />
+          <input type="hidden" name="sizeBytes" value={item?.sizeBytes ?? 0} />
           <input type="hidden" name="localUrl" value={item?.localUrl ?? ""} />
           <input type="hidden" name="sourceUrl" value="" />
         </div>

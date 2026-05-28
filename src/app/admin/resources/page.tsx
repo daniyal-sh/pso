@@ -16,7 +16,7 @@ export default async function AdminResourcesPage({ searchParams }: { searchParam
   const files = resources.filter((resource) => resource.localUrl).length;
 
   return (
-    <AdminShell context={context} title="Resources" description="Create, publish, archive, and correct student-facing resource metadata.">
+    <AdminShell context={context} title="Resources" description="Upload and manage the database-backed files shown on the public Resources page.">
       <div className="space-y-6">
         <DatasetHeader total={resources.length} secondary={`${files} uploaded files`} icon="download" />
         <ResourceTable resources={resources} />
@@ -38,7 +38,14 @@ function DatasetHeader({ total, secondary, icon }: { total: number; secondary: s
           <p className="text-sm font-bold text-white/65">{secondary}</p>
         </div>
       </div>
-      <p className="mt-4 text-sm leading-6 text-white/65">When Supabase is configured this table is loaded from the production database.</p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link href="/resources" target="_blank" className="rounded-md border border-emerald/40 px-4 py-2 text-sm font-black text-emerald hover:bg-emerald hover:text-white">
+          View public page
+        </Link>
+        <Link href="/admin/resources" className="rounded-md border border-white/10 px-4 py-2 text-sm font-black text-white/75 hover:border-emerald/50 hover:text-white">
+          New resource
+        </Link>
+      </div>
     </div>
   );
 }
@@ -65,6 +72,11 @@ function ResourceTable({ resources }: { resources: Awaited<ReturnType<typeof get
           ))}
         </tbody>
       </table>
+      {resources.length === 0 ? (
+        <div className="p-8 text-center text-sm font-bold text-white/60">
+          No resources yet. Use the upload form below to add the first database-backed resource.
+        </div>
+      ) : null}
     </div>
   );
 }

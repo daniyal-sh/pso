@@ -111,7 +111,7 @@ const nullableNumber = z.preprocess((value) => (value === "" ? null : value), z.
 const resourcePath = z.string().trim().max(700).optional().default("");
 
 export const resourceFormSchema = z.object({
-  id: z.string().trim().min(3).max(180),
+  id: z.string().trim().max(180).optional().default(""),
   status: z.enum(contentStatuses).default("published"),
   title: z.string().trim().min(3).max(240),
   description: z.string().trim().max(800).optional().default(""),

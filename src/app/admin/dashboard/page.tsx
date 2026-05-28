@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { ContentTable } from "@/components/admin/content-table";
 import { Icon } from "@/components/icon";
 import { requireAdminAccess } from "@/lib/admin/auth";
 import { getAdminDashboardData } from "@/lib/admin/content";
@@ -17,8 +16,6 @@ export default async function AdminDashboardPage() {
     { label: "Review Queue", value: data.metrics.reviewQueue, icon: "clipboard", detail: "Draft/review workflow" },
     { label: "Scheduled", value: data.metrics.scheduledContent, icon: "calendar", detail: "Future publishing" },
     { label: "Resources", value: data.metrics.resources, icon: "download", detail: "Indexed files" },
-    { label: "Past Papers", value: data.metrics.pastPapers, icon: "book-open", detail: "Paper archive" },
-    { label: "Questions", value: data.metrics.questions, icon: "list-checks", detail: "Practice items" },
   ];
 
   return (
@@ -30,7 +27,7 @@ export default async function AdminDashboardPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric) => (
             <div key={metric.label} className="rounded-md border border-white/10 bg-white/5 p-5 shadow-2xl">
               <span className="flex h-12 w-12 items-center justify-center rounded-md bg-emerald/20 text-emerald">
@@ -43,12 +40,11 @@ export default async function AdminDashboardPage() {
           ))}
         </div>
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3">
           {[
             ...(context.member?.isOwner || context.permissions.blogs ? [["Create Post", "/admin/posts", "pen"]] : []),
             ...(context.member?.isOwner || context.permissions.guides ? [["Add Guide", "/admin/guides", "book-open"]] : []),
             ...(context.member?.isOwner || context.permissions.resourceSubjects.length > 0 ? [["Upload Resource", "/admin/resources", "download"]] : []),
-            ...(context.member?.isOwner ? [["View Audit", "/admin/audit", "shield"]] : []),
           ].map(([label, href, icon]) => (
             <Link key={label} href={href} className="flex items-center gap-3 rounded-md border border-white/10 bg-[#061117]/70 p-4 text-sm font-black text-white hover:border-emerald/50">
               <span className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald/20 text-emerald">
@@ -60,46 +56,11 @@ export default async function AdminDashboardPage() {
         </div>
 
         <section className="rounded-md border border-white/10 bg-white/5 p-5">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-lg font-black text-white">Recent Content</h2>
-              <p className="mt-1 text-sm text-white/60">Drafts, reviews, scheduled content, and published posts/guides.</p>
-            </div>
-            <Link href="/admin/posts" className="text-sm font-black text-emerald">Manage posts</Link>
-          </div>
-          <ContentTable items={data.content} editBasePath="/admin/posts" context={context} />
+          <h2 className="text-lg font-black text-white">Manage PSO</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-white/60">
+            Use the dashboard for blogs, guides, resource uploads, access control, analytics, and settings. Past papers and the question bank remain database-backed public datasets, but are no longer exposed as dashboard editing sections.
+          </p>
         </section>
-
-        <div className="grid gap-6 xl:grid-cols-2">
-          <section className="rounded-md border border-white/10 bg-white/5 p-5">
-            <h2 className="text-lg font-black text-white">Workflow Events</h2>
-            <div className="mt-4 space-y-3">
-              {data.workflowEvents.map((event) => (
-                <div key={event.id} className="rounded-md border border-white/10 bg-[#061117]/70 p-4">
-                  <p className="text-sm font-black text-white">{event.title}</p>
-                  <p className="mt-1 text-xs text-white/60">
-                    {event.fromStatus ?? "new"} {"->"} {event.toStatus}
-                  </p>
-                  {event.note ? <p className="mt-2 text-sm text-white/70">{event.note}</p> : null}
-                </div>
-              ))}
-              {data.workflowEvents.length === 0 ? <p className="text-sm font-bold text-white/55">No workflow events yet.</p> : null}
-            </div>
-          </section>
-          <section className="rounded-md border border-white/10 bg-white/5 p-5">
-            <h2 className="text-lg font-black text-white">Audit Trail</h2>
-            <div className="mt-4 space-y-3">
-              {data.auditLog.map((item) => (
-                <div key={item.id} className="rounded-md border border-white/10 bg-[#061117]/70 p-4">
-                  <p className="text-sm font-black text-white">{item.action}</p>
-                  <p className="mt-1 text-xs text-white/60">{item.entityTable}:{item.entityId}</p>
-                  <p className="mt-2 text-sm text-white/70">{item.summary}</p>
-                </div>
-              ))}
-              {data.auditLog.length === 0 ? <p className="text-sm font-bold text-white/55">No audit entries yet.</p> : null}
-            </div>
-          </section>
-        </div>
       </div>
     </AdminShell>
   );

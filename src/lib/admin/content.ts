@@ -68,7 +68,8 @@ type DatasetStatusRow = {
   updated_at: string;
 };
 
-type ResourceMutation = Omit<ResourceAdminItem, "updatedAt" | "sizeBytes" | "createdBy"> & {
+type ResourceMutation = Omit<ResourceAdminItem, "id" | "updatedAt" | "sizeBytes" | "createdBy"> & {
+  id?: string;
   sizeBytes: number;
 };
 
@@ -525,7 +526,9 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
   assertManageResource(context, input.subject);
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
-  const previous = await supabase.from("resources").select("subject,local_url").eq("id", input.id).is("deleted_at", null).maybeSingle();
+  const resourceId = input.id?.trim() || `${slugSegment(input.subject)}-${slugSegment(input.title)}`;
+  if (!resourceId) throw new Error("Resource needs a title before it can be saved.");
+  const previous = await supabase.from("resources").select("subject,local_url").eq("id", resourceId).is("deleted_at", null).maybeSingle();
   if (previous.data) assertManageResource(context, previous.data.subject);
 
   let localUrl = input.localUrl || previous.data?.local_url || null;
@@ -533,7 +536,7 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
   if (isUploadFile(fileValue)) {
     if (!allowedResourceMimeTypes.has(fileValue.type)) throw new Error("Upload must be a PDF, PNG, JPEG, or WEBP file.");
     if (fileValue.size > maxResourceUploadBytes) throw new Error("Upload must be 50 MB or smaller.");
-    const objectPath = `${slugSegment(input.subject)}/${slugSegment(input.id)}/${Date.now()}-${safeFilename(fileValue.name)}`;
+    const objectPath = `${slugSegment(input.subject)}/${resourceId}/${Date.now()}-${safeFilename(fileValue.name)}`;
     const upload = await supabase.storage.from("resource-files").upload(objectPath, fileValue, {
       contentType: fileValue.type,
       upsert: false,
@@ -547,7 +550,7 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
     .from("resources")
     .upsert(
       {
-        id: input.id,
+        id: resourceId,
         status: input.status,
         title: input.title,
         description: input.description,
@@ -571,7 +574,7 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
     actor_id: context.user?.id,
     action: "resource.upsert",
     entity_table: "resources",
-    entity_id: input.id,
+    entity_id: resourceId,
     summary: `${input.title} saved as ${data.status}.`,
   });
   revalidateTag("published-resources", "max");
