@@ -98,9 +98,9 @@ export function ResourceEditor({ item, context }: { item?: ResourceAdminItem | n
               ))}
             </select>
           </label>
-          <TextField label="Collection / folder" name="folder" value={item?.folder} />
-          <TextField label="Year" name="year" value={item?.year} type="number" />
-          <TextField label="Pages" name="pages" value={item?.pages ?? 0} type="number" />
+          <input type="hidden" name="folder" value="" />
+          <input type="hidden" name="year" value="" />
+          <input type="hidden" name="pages" value="0" />
           <input type="hidden" name="sizeBytes" value={item?.sizeBytes ?? 0} />
           <input type="hidden" name="localUrl" value={item?.localUrl ?? ""} />
           <input type="hidden" name="sourceUrl" value="" />
