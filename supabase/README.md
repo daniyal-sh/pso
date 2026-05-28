@@ -6,7 +6,7 @@ This project expects Supabase for the secure admin dashboard.
 
 1. Create a Supabase project.
 2. Run `supabase/migrations/20260509190000_admin_content.sql` in the Supabase SQL editor or through the Supabase CLI.
-3. Confirm these public storage buckets exist: `content-assets`, `resource-files`, and `paper-assets`.
+3. Confirm these public storage buckets exist: `content-assets`, `resource-files`, `paper-assets`, and `question-pdfs`.
 4. Configure Supabase Auth redirect URLs for local development and production:
    - `http://localhost:3000/admin`
    - `https://pakistanolympiads.com/admin`
@@ -33,6 +33,17 @@ Then run the generated files in `supabase/seeds/` in filename order:
 4. `004_questions_001.sql` through `004_questions_008.sql`
 
 These SQL files are idempotent: re-running them updates existing seeded rows instead of creating duplicates.
+
+## Question PDF Uploads
+
+The question bank expects individual extracted PDFs in the public `question-pdfs` storage bucket.
+Upload the contents of `output/pdf/nstc-question-crops/questions/` into that bucket while preserving paths, so objects look like:
+
+```text
+question-pdfs/questions/2022/biology/.../biology-2022-...-part-i-1.pdf
+```
+
+The PDFs are generated locally and intentionally not committed to Git.
 
 ## Security Notes
 

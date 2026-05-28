@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
 import { Badge } from "@/components/sections/common";
 import type { Question } from "@/lib/content-data";
+import { questionPdfPaths } from "@/lib/question-pdf-paths";
 import { cn } from "@/lib/utils";
 
 type PracticeMode = "Subject MCQs" | "Common MCQs" | "Descriptive";
@@ -14,6 +15,7 @@ type QuestionBankProgress = {
   shuffleSalt: number;
   activeIndex: number;
   answers: Record<string, number | null>;
+  writtenSolutions: Record<string, string>;
   revealed: Record<string, boolean>;
   updatedAt: string | null;
 };
@@ -68,6 +70,7 @@ function createInitialProgress(): QuestionBankProgress {
     shuffleSalt: 17,
     activeIndex: 0,
     answers: {},
+    writtenSolutions: {},
     revealed: {},
     updatedAt: null,
   };
@@ -92,6 +95,11 @@ function cleanRevealed(value: unknown) {
   return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter((entry): entry is [string, boolean] => typeof entry[1] === "boolean"));
 }
 
+function cleanWrittenSolutions(value: unknown) {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+
 function normalizeProgress(value: unknown, subjects: string[]): QuestionBankProgress {
   const initial = createInitialProgress();
   if (!value || typeof value !== "object") return initial;
@@ -105,6 +113,7 @@ function normalizeProgress(value: unknown, subjects: string[]): QuestionBankProg
     shuffleSalt: Number.isFinite(saved.shuffleSalt) ? Number(saved.shuffleSalt) : initial.shuffleSalt,
     activeIndex: Number.isFinite(saved.activeIndex) ? Math.max(0, Math.floor(Number(saved.activeIndex))) : initial.activeIndex,
     answers: cleanAnswers(saved.answers),
+    writtenSolutions: cleanWrittenSolutions(saved.writtenSolutions),
     revealed: cleanRevealed(saved.revealed),
     updatedAt: typeof saved.updatedAt === "string" ? saved.updatedAt : null,
   };
@@ -117,6 +126,14 @@ function formatSavedAt(value: string | null) {
     minute: "2-digit",
     second: "2-digit",
   }).format(new Date(value));
+}
+
+function getQuestionPdfUrl(question: Question) {
+  const cropPath = questionPdfPaths[question.id as keyof typeof questionPdfPaths];
+  if (!cropPath) return null;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return null;
+  return `${supabaseUrl}/storage/v1/object/public/question-pdfs/${cropPath}`;
 }
 
 export function QuestionBankClient({ questions }: { questions: Question[] }) {
@@ -152,6 +169,8 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const active = filtered[visibleActiveIndex] ?? null;
   const selectedAnswer = active ? (progress.answers[active.id] ?? null) : null;
   const showSolution = active ? Boolean(progress.revealed[active.id]) : false;
+  const activePdfUrl = active ? getQuestionPdfUrl(active) : null;
+  const activeWrittenSolution = active ? (progress.writtenSolutions[active.id] ?? "") : "";
   const answeredInFiltered = filtered.filter((question) => progress.answers[question.id] !== undefined && progress.answers[question.id] !== null).length;
   const revealedInFiltered = filtered.filter((question) => progress.revealed[question.id]).length;
   const progressPercent = filtered.length > 0 ? Math.round((answeredInFiltered / filtered.length) * 100) : 0;
@@ -215,6 +234,14 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
     updateProgress((previous) => ({
       ...previous,
       answers: { ...previous.answers, [active.id]: index },
+    }));
+  }
+
+  function saveWrittenSolution(value: string) {
+    if (!active) return;
+    updateProgress((previous) => ({
+      ...previous,
+      writtenSolutions: { ...previous.writtenSolutions, [active.id]: value },
     }));
   }
 
@@ -378,13 +405,15 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                 <p className="text-sm font-black uppercase tracking-normal text-emerald">
                   Question {visibleActiveIndex + 1} of {filtered.length}
                 </p>
-                <h3 className="mt-2 text-base font-black text-charcoal">{active.source}</h3>
+                <h3 className="mt-2 text-base font-black text-charcoal">
+                  {active.subject} {active.year}
+                </h3>
                 <p className="mt-1 text-sm font-semibold text-charcoal/60">
-                  {active.sectionTitle} | Original number {active.displayNumber ?? active.number}
+                  {active.sectionTitle} | Question {active.displayNumber ?? active.number}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 lg:justify-end">
-                {[active.subject, active.topic, active.difficulty, active.type].filter(Boolean).map((tag, index) => (
+                {[active.type].filter(Boolean).map((tag, index) => (
                   <Badge key={`${tag}-${index}`} className="bg-white">
                     {tag}
                   </Badge>
@@ -392,37 +421,73 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
               </div>
             </div>
 
-            <div className="py-7">
-              <p className="whitespace-pre-wrap text-lg font-semibold leading-8 text-charcoal sm:text-2xl sm:leading-10">{active.prompt}</p>
-              {active.figure && (
-                <details className="mt-5 rounded-md border border-navy/10 bg-white p-4">
-                  <summary className="cursor-pointer text-sm font-black text-emerald">Show diagram</summary>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={active.figure} alt={`Diagram for question ${active.displayNumber ?? active.number}`} className="mt-4 w-full rounded-md border border-navy/10" />
-                </details>
+            <div className="py-6">
+              {activePdfUrl ? (
+                <div className="overflow-hidden rounded-md border border-navy/10 bg-white">
+                  <object data={activePdfUrl} type="application/pdf" className="h-[560px] w-full sm:h-[680px]">
+                    <div className="p-5 text-sm font-semibold text-charcoal/70">
+                      PDF preview is not available in this browser.{" "}
+                      <a className="font-black text-emerald underline" href={activePdfUrl} target="_blank" rel="noreferrer">
+                        Open the extracted question PDF
+                      </a>
+                    </div>
+                  </object>
+                </div>
+              ) : (
+                <div className="rounded-md border border-gold/30 bg-gold/10 p-5 text-sm font-semibold leading-6 text-charcoal/75">
+                  Extracted PDF is not available for this question yet. The 2025 camera-scan papers are excluded from the extraction set.
+                </div>
               )}
             </div>
 
             {active.options.length > 0 ? (
               <div className="grid gap-3">
-                {active.options.map((option, index) => (
+                {["A", "B", "C", "D"].map((label, index) => (
                   <button
-                    key={`${active.id}-${index}-${option}`}
+                    key={`${active.id}-${index}`}
                     onClick={() => chooseAnswer(index)}
                     type="button"
-                    className={cn("flex min-h-14 items-center gap-3 rounded-md border px-3 py-3 text-left text-sm font-bold leading-6 transition sm:gap-4 sm:px-4 sm:text-base", optionTone(active, index, selectedAnswer))}
+                    className={cn("flex min-h-14 items-center justify-center rounded-md border px-3 py-3 text-center text-lg font-black leading-6 transition sm:px-4", optionTone(active, index, selectedAnswer))}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-navy/5 text-sm font-black">{String.fromCharCode(65 + index)}</span>
-                    <span>{option}</span>
+                    {label}
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="rounded-md border border-navy/10 bg-white p-4 text-sm font-semibold text-charcoal/70">Write your solution separately, then reveal the available notes for checking.</div>
+              <div className="grid gap-3 rounded-md border border-navy/10 bg-white p-4">
+                <label className="text-sm font-black uppercase text-charcoal" htmlFor="descriptive-solution">
+                  Your solution
+                </label>
+                <textarea
+                  id="descriptive-solution"
+                  value={activeWrittenSolution}
+                  onChange={(event) => saveWrittenSolution(event.target.value)}
+                  className="min-h-44 rounded-md border border-navy/10 px-4 py-3 text-sm font-semibold leading-6 text-charcoal outline-none focus:border-emerald"
+                  placeholder="Type your working here..."
+                />
+                <label className="grid gap-2 text-sm font-black uppercase text-charcoal" htmlFor="solution-upload">
+                  Upload solution file
+                  <input
+                    id="solution-upload"
+                    type="file"
+                    accept="application/pdf,image/*"
+                    className="rounded-md border border-navy/10 bg-cool px-3 py-2 text-sm font-semibold normal-case text-charcoal file:mr-3 file:rounded-md file:border-0 file:bg-emerald file:px-3 file:py-2 file:text-sm file:font-black file:text-white"
+                  />
+                </label>
+                <p className="text-xs font-semibold leading-5 text-charcoal/60">Typed work is saved in this browser. Uploaded files stay on your device for now.</p>
+              </div>
             )}
 
             <div className="mt-6 flex flex-col gap-3 border-t border-navy/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold leading-6 text-charcoal/65">{active.page ? `Source page ${active.page}` : active.source}</p>
+              <p className="text-sm font-semibold leading-6 text-charcoal/65">
+                {activePdfUrl ? (
+                  <a className="font-black text-emerald underline" href={activePdfUrl} target="_blank" rel="noreferrer">
+                    Open PDF in a new tab
+                  </a>
+                ) : (
+                  "PDF unavailable"
+                )}
+              </p>
               <button
                 onClick={toggleSolution}
                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-emerald px-5 py-2.5 text-sm font-black text-white sm:w-auto"
