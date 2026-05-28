@@ -59,18 +59,6 @@ export default async function GuidesPage() {
           <GuidesBrowser guides={guides} />
         </Container>
       </section>
-
-      <section className="pb-10">
-        <Container>
-          <div className="dark-panel flex flex-col gap-5 rounded-md p-6 text-white sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-display text-3xl font-bold">Need files, books, and past papers?</h2>
-              <p className="mt-1 text-sm text-white/75">The full resource library has downloadable PDFs, source folders, problem sets, and past papers grouped by subject.</p>
-            </div>
-            <ButtonLink href="/resources" icon="download">Open resources</ButtonLink>
-          </div>
-        </Container>
-      </section>
     </>
   );
 }

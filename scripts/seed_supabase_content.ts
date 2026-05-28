@@ -3,7 +3,6 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { alumniStories, blogPosts } from "../src/lib/data";
 import { getAllGuides } from "../src/lib/guides";
-import { resources as normalizedResources } from "../src/lib/content-data";
 
 type JsonRecord = Record<string, unknown>;
 type SupabaseResult<T = unknown> = {
@@ -222,29 +221,6 @@ async function main() {
     });
   }
 
-  for (const resource of normalizedResources) {
-    assertOk(
-      `resource ${resource.id}`,
-      await supabase.from("resources").upsert(
-        {
-          id: resource.id,
-          status: "published",
-          title: resource.title,
-          description: resource.description ?? "",
-          subject: resource.subject,
-          kind: resource.kind,
-          folder: resource.folder,
-          year: resource.year,
-          pages: resource.pages ?? 0,
-          size_bytes: resource.sizeBytes ?? 0,
-          local_url: resource.localUrl,
-          source_url: resource.sourceUrl ?? "",
-        },
-        { onConflict: "id" },
-      ),
-    );
-  }
-
   const pastPapers = readJson<JsonRecord[]>("src/data/past-papers.json");
   for (const paper of pastPapers) {
     assertOk(
@@ -306,7 +282,7 @@ async function main() {
     );
   }
 
-  console.log(`Seeded ${blogPosts.length} blog posts, ${getAllGuides().length} guides, ${alumniStories.length} alumni stories, ${normalizedResources.length} resources, ${pastPapers.length} papers, and ${questions.length} questions.`);
+  console.log(`Seeded ${blogPosts.length} blog posts, ${getAllGuides().length} guides, ${alumniStories.length} alumni stories, ${pastPapers.length} papers, and ${questions.length} questions.`);
 }
 
 main().catch((error) => {

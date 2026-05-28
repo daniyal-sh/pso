@@ -5,7 +5,7 @@ import { Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
 import { pathwaySteps, tracks } from "@/lib/data";
 import { getPublishedGuides } from "@/lib/public-content";
-import { getPublishedPastPapers, getPublishedQuestions, getPublishedResources } from "@/lib/public-datasets";
+import { getPublishedPastPapers, getPublishedQuestions } from "@/lib/public-datasets";
 
 export function generateStaticParams() {
   return tracks.map((track) => ({ slug: track.slug }));
@@ -23,15 +23,13 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const track = tracks.find((item) => item.slug === slug);
   if (!track) notFound();
-  const [questions, pastPapers, resources, guides] = await Promise.all([
+  const [questions, pastPapers, guides] = await Promise.all([
     getPublishedQuestions(),
     getPublishedPastPapers(),
-    getPublishedResources(),
     getPublishedGuides(),
   ]);
   const subjectQuestions = questions.filter((question) => question.subject === track.name);
   const subjectPapers = pastPapers.filter((paper) => paper.subject === track.name);
-  const subjectResources = resources.filter((resource) => resource.localUrl && resource.subject === track.name);
   const subjectGuides = guides
     .filter((guide) => guide.category === track.name || (guide.tags ?? []).includes(track.name))
     .slice(0, 4);
@@ -45,7 +43,6 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
         variant="olympiads"
         stats={[
           { label: "Guides", value: String(subjectGuides.length), icon: "graduation-cap" },
-          { label: "Resources", value: String(subjectResources.length), icon: "book-open" },
           { label: "Questions", value: String(subjectQuestions.length), icon: "clipboard-check" },
           { label: "Papers", value: String(subjectPapers.length), icon: "file-text" },
         ]}
@@ -95,7 +92,7 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
       </section>
 
       <section className="pb-10">
-        <Container className="grid gap-6 lg:grid-cols-3">
+        <Container className="grid gap-6 lg:grid-cols-2">
           <div className="card-surface rounded-md p-6">
             <h2 className="font-display text-3xl font-bold text-charcoal">Guides</h2>
             <div className="mt-4 space-y-3">
@@ -117,19 +114,6 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
                 </Link>
               ))}
             </div>
-          </div>
-          <div className="card-surface rounded-md p-6">
-            <h2 className="font-display text-3xl font-bold text-charcoal">Resources</h2>
-            <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-2">
-              {subjectResources.map((resource) => (
-                <Link key={resource.id} href={resource.localUrl ?? "/resources"} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
-                  {resource.title}
-                </Link>
-              ))}
-            </div>
-            <Link href={`/resources?subject=${encodeURIComponent(track.name)}`} className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald">
-              Browse {track.name} resources <Icon name="chevron" className="h-4 w-4" />
-            </Link>
           </div>
         </Container>
       </section>

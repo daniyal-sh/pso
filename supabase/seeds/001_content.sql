@@ -2551,7 +2551,7 @@ insert into public.content_items (
   'Finances are not the barrier many students imagine. Competence, hard work, and the right preparation path matter.', 'Finances are not the barrier many students imagine. Competence, hard work, and the right preparation path matter.', 'Physics', 'Pakistan Olympiads',
   '2 min', '', '',
   '', '', false,
-  '{"achievement":"MIT Class of 2027","subject":"Physics","location":"Cambridge, Massachusetts","role":"IPhO bronze medalist","tags":["Physics","Alumni"]}'::jsonb, '2026-05-28T19:59:09.654Z'::timestamptz
+  '{"achievement":"MIT Class of 2027","subject":"Physics","location":"Cambridge, Massachusetts","role":"IPhO bronze medalist","tags":["Physics","Alumni"]}'::jsonb, '2026-05-28T21:13:11.927Z'::timestamptz
 )
 on conflict (kind, slug) do update set
   status = excluded.status,
@@ -2619,7 +2619,7 @@ insert into public.content_items (
   'Olympiad preparation is valuable because it teaches you to self-learn and solve hard, creative problems.', 'Olympiad preparation is valuable because it teaches you to self-learn and solve hard, creative problems.', 'Physics', 'Pakistan Olympiads',
   '2 min', '', '',
   '', '', false,
-  '{"achievement":"IPhO Bronze 2024","subject":"Physics","location":"Cambridge, Massachusetts","role":"MIT physics undergraduate","tags":["Physics","Alumni"]}'::jsonb, '2026-05-28T19:59:09.654Z'::timestamptz
+  '{"achievement":"IPhO Bronze 2024","subject":"Physics","location":"Cambridge, Massachusetts","role":"MIT physics undergraduate","tags":["Physics","Alumni"]}'::jsonb, '2026-05-28T21:13:11.927Z'::timestamptz
 )
 on conflict (kind, slug) do update set
   status = excluded.status,

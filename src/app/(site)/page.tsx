@@ -1,28 +1,26 @@
-import { AlumniCard, BlogCard, ResourceCard, TrackCard, Pathway } from "@/components/sections/cards";
+import { AlumniCard, BlogCard, TrackCard, Pathway } from "@/components/sections/cards";
 import { ButtonLink, Container, PageHero, SectionTitle, StatStrip } from "@/components/sections/common";
-import { featuredResources, pathwaySteps, tracks } from "@/lib/data";
+import { pathwaySteps, tracks } from "@/lib/data";
 import { getPublishedAlumniStories, getPublishedBlogPosts, getPublishedGuides } from "@/lib/public-content";
-import { getPublishedPastPapers, getPublishedQuestions, getPublishedResources, getQuestionStatsForRows, getResourceStatsForRows } from "@/lib/public-datasets";
+import { getPublishedPastPapers, getPublishedQuestions, getQuestionStatsForRows } from "@/lib/public-datasets";
 
 export default async function HomePage() {
-  const [blogPosts, guides, alumniStories, resources, pastPapers, questions] = await Promise.all([
+  const [blogPosts, guides, alumniStories, pastPapers, questions] = await Promise.all([
     getPublishedBlogPosts(),
     getPublishedGuides(),
     getPublishedAlumniStories(),
-    getPublishedResources(),
     getPublishedPastPapers(),
     getPublishedQuestions(),
   ]);
   const questionStats = getQuestionStatsForRows(questions);
-  const resourceStats = getResourceStatsForRows(resources);
   const guideCount = guides.length;
   const liveStats = [
-    { label: "Indexed Resources", value: `${resourceStats.total}+`, icon: "book-open" },
     { label: "Extracted Questions", value: `${questionStats.total}+`, icon: "clipboard-check" },
     { label: "Past Papers", value: `${pastPapers.length}`, icon: "file-text" },
+    { label: "Guide Articles", value: guideCount.toString(), icon: "book-open" },
+    { label: "Blog Posts", value: blogPosts.length.toString(), icon: "newspaper" },
     { label: "Contributors", value: "Open", icon: "users" },
     { label: "Olympiad Tracks", value: tracks.length.toString(), icon: "sparkles" },
-    { label: "Guide Articles", value: guideCount.toString(), icon: "trophy" },
   ];
   return (
     <>
@@ -58,17 +56,6 @@ export default async function HomePage() {
           <SectionTitle eyebrow="Pathway" title="Your pathway to the international stage" copy="A proven journey from screening to team selection." />
         </Container>
         <Pathway steps={pathwaySteps} />
-      </section>
-
-      <section className="py-8">
-        <Container>
-          <SectionTitle eyebrow="Featured Resources" title="Focused resources for serious preparation" />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {featuredResources.map((resource) => (
-              <ResourceCard key={resource.title} resource={resource} />
-            ))}
-          </div>
-        </Container>
       </section>
 
       <StatStrip stats={liveStats} />

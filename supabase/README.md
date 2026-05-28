@@ -28,9 +28,8 @@ npm run db:seed:sql
 Then run the generated files in `supabase/seeds/` in filename order:
 
 1. `001_content.sql`
-2. `002_resources.sql`
-3. `003_past_papers.sql`
-4. `004_questions_001.sql` through `004_questions_008.sql`
+2. `002_past_papers.sql`
+3. `003_questions_001.sql` through `003_questions_008.sql`
 
 These SQL files are idempotent: re-running them updates existing seeded rows instead of creating duplicates.
 

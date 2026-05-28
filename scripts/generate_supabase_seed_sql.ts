@@ -3,23 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { alumniStories, blogPosts } from "../src/lib/data";
 import { getAllGuides } from "../src/lib/guides";
-import { resources as normalizedResources } from "../src/lib/content-data";
 
 type JsonObject = Record<string, unknown>;
-
-type ResourceSeed = {
-  id: string;
-  title: string;
-  description?: string;
-  subject: string;
-  kind: string;
-  folder?: string;
-  year?: number | null;
-  pages?: number | null;
-  sizeBytes?: number | null;
-  localUrl?: string | null;
-  sourceUrl?: string | null;
-};
 
 type PastPaperSeed = {
   id: string;
@@ -319,39 +304,6 @@ on conflict do nothing;`);
   return statements.join("\n");
 }
 
-function resourcesSql(resources: ResourceSeed[]) {
-  const values = resources.map((resource) => `(
-  ${sqlString(resource.id)}, 'published', ${sqlString(resource.title)}, ${sqlRequiredString(resource.description)},
-  ${sqlString(resource.subject)}, ${sqlString(resource.kind)}, ${sqlRequiredString(resource.folder)},
-  ${sqlNumber(resource.year)}, ${sqlNumber(resource.pages ?? 0)}, ${sqlNumber(resource.sizeBytes ?? 0)},
-  ${sqlString(storagePath(resource.localUrl))}, ${sqlRequiredString(resource.sourceUrl)}, '{}'::jsonb
-)`);
-
-  return `${sqlHeader("Resource seed")}
-begin;
-
-insert into public.resources (
-  id, status, title, description, subject, kind, folder, year, pages,
-  size_bytes, local_url, source_url, metadata
-) values
-${values.join(",\n")}
-on conflict (id) do update set
-  status = excluded.status,
-  title = excluded.title,
-  description = excluded.description,
-  subject = excluded.subject,
-  kind = excluded.kind,
-  folder = excluded.folder,
-  year = excluded.year,
-  pages = excluded.pages,
-  size_bytes = excluded.size_bytes,
-  local_url = excluded.local_url,
-  source_url = excluded.source_url,
-  metadata = excluded.metadata;
-
-commit;`;
-}
-
 function pastPapersSql(papers: PastPaperSeed[]) {
   const values = papers.map((paper) => `(
   ${sqlString(paper.id)}, 'published', ${sqlString(paper.title)}, ${sqlString(paper.exam)}, ${sqlString(paper.subject)},
@@ -453,18 +405,16 @@ function main() {
 
   removeOldSeedFiles();
   writeSqlFile("001_content.sql", contentSql(allContent));
-  writeSqlFile("002_resources.sql", resourcesSql(normalizedResources));
-  writeSqlFile("003_past_papers.sql", pastPapersSql(papers));
+  writeSqlFile("002_past_papers.sql", pastPapersSql(papers));
 
   for (let index = 0; index < questions.length; index += questionChunkSize) {
     const chunk = questions.slice(index, index + questionChunkSize);
     const chunkNumber = Math.floor(index / questionChunkSize) + 1;
-    writeSqlFile(`004_questions_${String(chunkNumber).padStart(3, "0")}.sql`, questionsSql(chunk, chunkNumber));
+    writeSqlFile(`003_questions_${String(chunkNumber).padStart(3, "0")}.sql`, questionsSql(chunk, chunkNumber));
   }
 
   console.log(`Generated SQL seed files in ${path.relative(root, outDir)}:`);
   console.log(`- ${allContent.length} content items`);
-  console.log(`- ${normalizedResources.length} resources`);
   console.log(`- ${papers.length} past papers`);
   console.log(`- ${questions.length} questions split into ${Math.ceil(questions.length / questionChunkSize)} chunks`);
 }

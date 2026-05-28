@@ -7,19 +7,18 @@ const columns = [
     links: [
       ["Olympiads", "/olympiads"],
       ["Guides", "/guides"],
-      ["Resources", "/resources"],
       ["Question Bank", "/question-bank"],
       ["Past Papers", "/past-papers"],
       ["Blog", "/blog"],
     ],
   },
   {
-    title: "Resources",
+    title: "Practice",
     links: [
       ["MCQ Practice", "/question-bank"],
       ["Long Problems", "/question-bank"],
       ["Roadmaps", "/guides"],
-      ["Resource Library", "/resources"],
+      ["Past Papers", "/past-papers"],
     ],
   },
   {

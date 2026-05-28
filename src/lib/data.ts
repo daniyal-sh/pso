@@ -2,7 +2,6 @@ export const navItems = [
   { href: "/", label: "Home" },
   { href: "/olympiads", label: "Olympiads" },
   { href: "/guides", label: "Guides" },
-  { href: "/resources", label: "Resources" },
   { href: "/question-bank", label: "Question Bank" },
   { href: "/past-papers", label: "Past Papers" },
   { href: "/blog", label: "Blog" },
@@ -106,49 +105,6 @@ export const pathwaySteps = [
     icon: "flag",
   },
 ];
-
-export const featuredResources = [
-  {
-    title: "Guide to IPhO through NSTC",
-    category: "Featured Guide",
-    description: "Daniyal Shahzad's full Pakistan IPhO selection and preparation guide.",
-    href: "/guides/guide-to-ipho-through-nstc",
-    icon: "rocket",
-    tone: "dark",
-  },
-  {
-    title: "MCQ Practice",
-    category: "Practice",
-    description: "Topic-wise MCQs with detailed solutions and progress signals.",
-    href: "/question-bank",
-    icon: "list-checks",
-    tone: "mint",
-  },
-  {
-    title: "Past Papers",
-    category: "Archive",
-    description: "Collections from NSTC and international olympiads.",
-    href: "/past-papers",
-    icon: "file-text",
-    tone: "cool",
-  },
-  {
-    title: "Long Problems",
-    category: "Deep Work",
-    description: "Challenging problems with hints and structured solutions.",
-    href: "/question-bank",
-    icon: "activity",
-    tone: "gold",
-  },
-  {
-    title: "Preparation Roadmaps",
-    category: "Roadmaps",
-    description: "Subject-wise routes to plan your olympiad year.",
-    href: "/guides",
-    icon: "route",
-    tone: "teal",
-  },
-] as const;
 
 export const guideCards = [
   {
