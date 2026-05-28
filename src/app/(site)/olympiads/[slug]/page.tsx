@@ -5,7 +5,7 @@ import { Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
 import { pathwaySteps, tracks } from "@/lib/data";
 import { getPublishedGuides } from "@/lib/public-content";
-import { getPublishedPastPapers, getPublishedQuestions } from "@/lib/public-datasets";
+import { getDatabasePublishedPastPapers, getDatabasePublishedQuestions } from "@/lib/public-datasets";
 
 export function generateStaticParams() {
   return tracks.map((track) => ({ slug: track.slug }));
@@ -24,8 +24,8 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   const track = tracks.find((item) => item.slug === slug);
   if (!track) notFound();
   const [questions, pastPapers, guides] = await Promise.all([
-    getPublishedQuestions(),
-    getPublishedPastPapers(),
+    getDatabasePublishedQuestions(),
+    getDatabasePublishedPastPapers(),
     getPublishedGuides(),
   ]);
   const subjectQuestions = questions.filter((question) => question.subject === track.name);
@@ -108,11 +108,13 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
           <div className="card-surface rounded-md p-6">
             <h2 className="font-display text-3xl font-bold text-charcoal">Past papers</h2>
             <div className="mt-4 space-y-3">
-              {subjectPapers.map((paper) => (
+              {subjectPapers.length ? subjectPapers.map((paper) => (
                 <Link key={paper.id} href={`/past-papers/${paper.id}`} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
                   {paper.title} - {paper.questionCount} questions
                 </Link>
-              ))}
+              )) : (
+                <Link href="/past-papers" className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">Browse all past papers</Link>
+              )}
             </div>
           </div>
         </Container>

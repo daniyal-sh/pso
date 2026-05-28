@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export function TrackCard({
   track,
   href,
+  stats,
 }: {
   track: {
     slug: string;
@@ -17,6 +18,7 @@ export function TrackCard({
     exam: string;
   };
   href?: string;
+  stats?: { label: string; value: number }[];
 }) {
   return (
     <Link
@@ -31,6 +33,16 @@ export function TrackCard({
       </div>
       <h3 className="mt-4 text-xl font-black text-charcoal">{track.name}</h3>
       <p className="mt-2 min-h-12 text-sm leading-6 text-charcoal/70">{track.summary}</p>
+      {stats && (
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-navy/10 pt-4">
+          {stats.map((stat) => (
+            <div key={stat.label}>
+              <p className="text-lg font-black leading-none text-charcoal">{stat.value}</p>
+              <p className="mt-1 text-[11px] font-bold uppercase text-charcoal/55">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="mt-4 flex items-center justify-end text-navy transition group-hover:text-emerald">
         <Icon name="chevron" className="h-5 w-5" />
       </div>

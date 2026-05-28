@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { ResourcesBrowser } from "@/components/interactive/resources-browser";
 import { Container, PageHero } from "@/components/sections/common";
-import { getPublishedResources, getResourceStatsForRows } from "@/lib/public-datasets";
+import { getPublishedResources } from "@/lib/public-datasets";
 
 export const metadata = {
   title: "Resources",
@@ -9,20 +9,13 @@ export const metadata = {
 
 export default async function ResourcesPage() {
   const resources = await getPublishedResources();
-  const stats = getResourceStatsForRows(resources);
 
   return (
     <>
       <PageHero
         title="Resource Library"
-        subtitle="Database-backed files uploaded by moderators, grouped by subject."
+        subtitle=""
         variant="guides"
-        stats={[
-          { label: "Indexed Resources", value: String(stats.total), icon: "book-open" },
-          { label: "Local Downloads", value: String(stats.local), icon: "download" },
-          { label: "Uploaded Files", value: String(stats.local), icon: "download" },
-          { label: "Subjects", value: String(stats.subjects), icon: "atom" },
-        ]}
       />
       <section className="py-10">
         <Container>

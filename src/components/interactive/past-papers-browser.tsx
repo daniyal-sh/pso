@@ -52,12 +52,6 @@ export function PastPapersBrowser({ papers }: { papers: PastPaper[] }) {
               <Badge>{paper.year}</Badge>
             </div>
             <h2 className="mt-4 text-lg font-black text-charcoal">{paper.title}</h2>
-            <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-charcoal/60">
-              <span>{paper.pages} pages</span>
-              <span>{paper.mcqCount} MCQs</span>
-              <span>{paper.partICount} common</span>
-              <span>{paper.partIICount} subject</span>
-            </div>
             <div className="mt-5 flex items-center gap-2 text-sm font-black text-emerald">
               Open paper viewer
               <Icon name="chevron" className="h-4 w-4 transition group-hover:translate-x-1" />
