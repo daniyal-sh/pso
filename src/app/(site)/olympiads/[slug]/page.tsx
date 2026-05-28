@@ -31,7 +31,7 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   ]);
   const subjectQuestions = questions.filter((question) => question.subject === track.name);
   const subjectPapers = pastPapers.filter((paper) => paper.subject === track.name);
-  const subjectResources = resources.filter((resource) => resource.subject === track.name || (track.name === "Astronomy" && resource.subject === "IOAA"));
+  const subjectResources = resources.filter((resource) => resource.localUrl && resource.subject === track.name);
   const subjectGuides = guides
     .filter((guide) => guide.category === track.name || (guide.tags ?? []).includes(track.name))
     .slice(0, 4);
@@ -122,7 +122,7 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
             <h2 className="font-display text-3xl font-bold text-charcoal">Resources</h2>
             <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-2">
               {subjectResources.map((resource) => (
-                <Link key={resource.id} href={resource.localUrl ?? resource.sourceUrl} target={resource.localUrl ? undefined : "_blank"} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
+                <Link key={resource.id} href={resource.localUrl ?? "/resources"} className="block rounded-md border border-navy/10 bg-white p-3 text-sm font-bold text-charcoal hover:text-emerald">
                   {resource.title}
                 </Link>
               ))}

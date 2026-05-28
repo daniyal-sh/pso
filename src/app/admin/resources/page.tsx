@@ -13,12 +13,12 @@ export default async function AdminResourcesPage({ searchParams }: { searchParam
   const context = await requireResourceAccess();
   const { edit } = await searchParams;
   const [resources, item] = await Promise.all([getAdminResources(context), getAdminResourceItem(edit, context)]);
-  const external = resources.filter((resource) => !resource.localUrl).length;
+  const files = resources.filter((resource) => resource.localUrl).length;
 
   return (
     <AdminShell context={context} title="Resources" description="Create, publish, archive, and correct student-facing resource metadata.">
       <div className="space-y-6">
-        <DatasetHeader total={resources.length} secondary={`${external} external links`} icon="download" />
+        <DatasetHeader total={resources.length} secondary={`${files} uploaded files`} icon="download" />
         <ResourceTable resources={resources} />
         <ResourceEditor item={item} context={context} />
       </div>
@@ -48,7 +48,7 @@ function ResourceTable({ resources }: { resources: Awaited<ReturnType<typeof get
     <div className="overflow-x-auto rounded-md border border-white/10 bg-white/5">
       <table className="w-full min-w-[940px] text-left text-sm">
         <thead className="bg-[#061117]/70 text-xs uppercase text-white/50">
-          <tr>{["Title", "Status", "Subject", "Kind", "Storage", "Source", "Edit"].map((header) => <th key={header} className="border-b border-white/10 px-4 py-3">{header}</th>)}</tr>
+          <tr>{["Title", "Status", "Subject", "Kind", "File", "Edit"].map((header) => <th key={header} className="border-b border-white/10 px-4 py-3">{header}</th>)}</tr>
         </thead>
         <tbody>
           {resources.slice(0, 120).map((resource) => (
@@ -57,8 +57,7 @@ function ResourceTable({ resources }: { resources: Awaited<ReturnType<typeof get
               <td className="px-4 py-3 text-white/75">{resource.status}</td>
               <td className="px-4 py-3 text-white/75">{resource.subject}</td>
               <td className="px-4 py-3 text-white/75">{resource.kind}</td>
-              <td className="px-4 py-3 text-white/75">{resource.localUrl ? "Local file" : "External source"}</td>
-              <td className="max-w-[260px] truncate px-4 py-3 text-white/75">{resource.sourceUrl || "Not attached"}</td>
+              <td className="px-4 py-3 text-white/75">{resource.localUrl ? "Uploaded" : "Pending upload"}</td>
               <td className="px-4 py-3">
                 <Link href={`/admin/resources?edit=${encodeURIComponent(resource.id)}`} className="font-black text-emerald">Edit</Link>
               </td>

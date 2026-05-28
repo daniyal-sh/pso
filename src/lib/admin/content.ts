@@ -3,7 +3,7 @@ import "server-only";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { blogPosts } from "@/lib/data";
 import { getAllGuides } from "@/lib/guides";
-import { pastPapers, questions, resources } from "@/lib/content-data";
+import { pastPapers, questions } from "@/lib/content-data";
 import type {
   AdminContext,
   AdminDashboardData,
@@ -192,25 +192,6 @@ function isUploadFile(value: unknown): value is File {
   return typeof File !== "undefined" && value instanceof File && value.size > 0;
 }
 
-function fallbackResources(): ResourceAdminItem[] {
-  return resources.map((resource) => ({
-    id: resource.id,
-    status: "published",
-    title: resource.title,
-    description: resource.description,
-    subject: resource.subject as AdminSubject,
-    kind: resource.kind,
-    folder: resource.folder,
-    year: resource.year,
-    pages: resource.pages,
-    sizeBytes: resource.sizeBytes,
-    localUrl: resource.localUrl ?? "",
-    sourceUrl: resource.sourceUrl,
-    createdBy: null,
-    updatedAt: "",
-  }));
-}
-
 function fallbackPastPapers(): PastPaperAdminItem[] {
   return pastPapers.map((paper) => ({
     id: paper.id,
@@ -271,7 +252,7 @@ export async function getAdminDashboardData(context?: AdminContext): Promise<Adm
         publishedContent: content.length,
         reviewQueue: 0,
         scheduledContent: 0,
-        resources: resources.length,
+        resources: 0,
         pastPapers: pastPapers.length,
         questions: questions.length,
         admins: 0,
@@ -517,7 +498,7 @@ export async function transitionContentItem(id: string, status: ContentStatus, n
 
 export async function getAdminResources(context?: AdminContext) {
   const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return fallbackResources();
+  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
   let query = supabase
     .from("resources")
     .select("id,status,title,description,subject,kind,folder,year,pages,size_bytes,local_url,source_url,created_by,updated_at")
@@ -551,7 +532,7 @@ export async function getAdminResources(context?: AdminContext) {
 export async function getAdminResourceItem(id?: string, context?: AdminContext) {
   if (!id) return null;
   const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return fallbackResources().find((item) => item.id === id) ?? null;
+  if (!getSupabaseConfig().hasServiceRole || !supabase) return null;
   const { data, error } = await supabase
     .from("resources")
     .select("id,status,title,description,subject,kind,folder,year,pages,size_bytes,local_url,source_url,created_by,updated_at")
@@ -616,7 +597,7 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
         pages: input.pages,
         size_bytes: sizeBytes,
         local_url: localUrl,
-        source_url: input.sourceUrl,
+        source_url: "",
         created_by: previous.data ? undefined : context.user?.id,
         updated_by: context.user?.id,
       },

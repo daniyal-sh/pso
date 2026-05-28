@@ -57,8 +57,8 @@ export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
   const visibleStats = useMemo(
     () => [
       { label: "Shown", value: filtered.length.toString(), icon: "book-open" },
-      { label: "Downloads", value: filtered.filter((resource) => resource.localUrl).length.toString(), icon: "download" },
-      { label: "Source Links", value: filtered.filter((resource) => !resource.localUrl).length.toString(), icon: "bookmark" },
+      { label: "Files", value: filtered.filter((resource) => resource.localUrl).length.toString(), icon: "download" },
+      { label: "Subjects", value: new Set(filtered.map((resource) => subjectFromResource(resource))).size.toString(), icon: "atom" },
     ],
     [filtered],
   );
@@ -135,7 +135,7 @@ export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="font-display text-3xl font-bold text-charcoal">{group.subject}</h2>
-                  <p className="text-sm text-charcoal/65">Files, guide sources, and practice materials for {group.subject.toLowerCase()}.</p>
+                  <p className="text-sm text-charcoal/65">Uploaded preparation files for {group.subject.toLowerCase()}.</p>
                 </div>
                 <Badge>{group.items.length} resources</Badge>
               </div>
@@ -154,28 +154,23 @@ export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
                     <h3 className="mt-4 text-xl font-black leading-snug text-charcoal">{resource.title}</h3>
                     <p className="mt-2 flex-1 text-sm leading-6 text-charcoal/70">{resource.description}</p>
                     <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-charcoal/55">
-                      <span className="rounded-full bg-cool px-3 py-1">{resource.pages || "External"} pages</span>
+                      <span className="rounded-full bg-cool px-3 py-1">{resource.pages || "Unknown"} pages</span>
                       {resource.sizeBytes > 0 && <span className="rounded-full bg-cool px-3 py-1">{formatBytes(resource.sizeBytes)}</span>}
                       <span className="rounded-full bg-cool px-3 py-1">{resource.folder}</span>
                     </div>
                     <div className="mt-5 flex flex-wrap gap-3">
-                      <Link
-                        href={resource.localUrl ?? resource.sourceUrl}
-                        target={resource.localUrl ? undefined : "_blank"}
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald px-4 py-2 text-sm font-black text-white transition hover:bg-teal"
-                      >
-                        {resource.localUrl ? "Open file" : "Open source"}
-                        <Icon name={resource.localUrl ? "download" : "chevron"} className="h-4 w-4" />
-                      </Link>
-                      {resource.localUrl && (
+                      {resource.localUrl ? (
                         <Link
-                          href={resource.sourceUrl}
-                          target="_blank"
-                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-emerald/20 bg-white px-4 py-2 text-sm font-black text-emerald transition hover:bg-mint"
+                          href={resource.localUrl}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald px-4 py-2 text-sm font-black text-white transition hover:bg-teal"
                         >
-                          Source folder
-                          <Icon name="chevron" className="h-4 w-4" />
+                          Open file
+                          <Icon name="download" className="h-4 w-4" />
                         </Link>
+                      ) : (
+                        <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-navy/10 bg-cool px-4 py-2 text-sm font-black text-charcoal/55">
+                          File pending
+                        </span>
                       )}
                     </div>
                   </article>

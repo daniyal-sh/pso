@@ -88,8 +88,8 @@ export function ResourceEditor({ item, context }: { item?: ResourceAdminItem | n
           <TextField label="Year" name="year" value={item?.year} type="number" />
           <TextField label="Pages" name="pages" value={item?.pages ?? 0} type="number" />
           <TextField label="Size bytes" name="sizeBytes" value={item?.sizeBytes ?? 0} type="number" />
-          <TextField label="Local URL" name="localUrl" value={item?.localUrl} />
-          <TextField label="Source URL" name="sourceUrl" value={item?.sourceUrl} />
+          <input type="hidden" name="localUrl" value={item?.localUrl ?? ""} />
+          <input type="hidden" name="sourceUrl" value="" />
         </div>
         <div className="mt-4">
           <TextArea label="Description" name="description" value={item?.description} rows={4} />

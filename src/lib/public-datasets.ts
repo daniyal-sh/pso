@@ -1,7 +1,7 @@
 import "server-only";
 
 import { unstable_cache } from "next/cache";
-import { pastPapers, questions, resources, type PastPaper, type Question, type ResourceItem } from "@/lib/content-data";
+import { pastPapers, questions, type PastPaper, type Question, type ResourceItem } from "@/lib/content-data";
 import { getSupabaseConfig, getSupabaseServiceClient } from "@/lib/supabase/server";
 
 type ResourceRow = {
@@ -130,7 +130,7 @@ function rowToQuestion(row: QuestionRow): Question {
 
 async function queryPublishedResources() {
   const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return null;
+  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
   const { data, error } = await supabase
     .from("resources")
     .select("id,title,description,subject,kind,folder,year,pages,size_bytes,local_url,source_url")
@@ -141,7 +141,7 @@ async function queryPublishedResources() {
 
   if (error) {
     console.error("Published resources query failed", error);
-    return null;
+    return [];
   }
   return (data ?? []).map((row) => rowToResource(row as ResourceRow));
 }
@@ -198,7 +198,7 @@ const getCachedPublishedQuestions = unstable_cache(queryPublishedQuestions, ["pu
 
 export async function getPublishedResources() {
   const rows = await getCachedPublishedResources();
-  return rows ?? resources;
+  return rows ?? [];
 }
 
 export async function getPublishedPastPapers() {

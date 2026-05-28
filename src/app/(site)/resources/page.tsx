@@ -20,7 +20,7 @@ export default async function ResourcesPage() {
         stats={[
           { label: "Indexed Resources", value: String(stats.total), icon: "book-open" },
           { label: "Local Downloads", value: String(stats.local), icon: "download" },
-          { label: "External References", value: String(stats.external), icon: "bookmark" },
+          { label: "Uploaded Files", value: String(stats.local), icon: "download" },
           { label: "Subjects", value: String(stats.subjects), icon: "atom" },
         ]}
       />
