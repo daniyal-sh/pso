@@ -15,6 +15,7 @@ type AttemptState = {
   paperId: string;
   mcqAnswers: Record<string, AnswerChoice | null>;
   descriptiveAnswer: string;
+  descriptiveSolutionFileName: string;
   scratchpad: string;
   currentPage: number;
   activeQuestion: number | null;
@@ -50,6 +51,7 @@ function createInitialAttempt(paper: PastPaper): AttemptState {
     paperId: paper.id,
     mcqAnswers: createEmptyAnswers(),
     descriptiveAnswer: "",
+    descriptiveSolutionFileName: "",
     scratchpad: "",
     currentPage: 0,
     activeQuestion: null,
@@ -67,6 +69,7 @@ function normalizeAttempt(paper: PastPaper, value: Partial<AttemptState> | null)
     ...initial,
     ...value,
     mcqAnswers: { ...initial.mcqAnswers, ...(value.mcqAnswers ?? {}) },
+    descriptiveSolutionFileName: typeof value.descriptiveSolutionFileName === "string" ? value.descriptiveSolutionFileName : "",
     currentPage: Math.max(0, Math.min(paper.pageImages.length - 1, value.currentPage ?? 0)),
     timerSecondsRemaining: Math.max(0, value.timerSecondsRemaining ?? PAST_PAPER_TIMER_SECONDS),
     timerRunning: Boolean(value.timerRunning && (value.timerSecondsRemaining ?? 0) > 0),
@@ -104,6 +107,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
   const isReviewing = Boolean(attempt.submittedAt);
   const descriptiveWordCount = countWords(attempt.descriptiveAnswer);
   const hasDescriptiveDraft = attempt.descriptiveAnswer.trim().length > 0;
+  const hasDescriptiveUpload = attempt.descriptiveSolutionFileName.trim().length > 0;
   const relatedPapers = useMemo(() => papers.filter((item) => item.id !== paper.id && item.subject === paper.subject).slice(0, 4), [paper.id, paper.subject, papers]);
 
   const answerKeyByQuestion = useMemo(() => {
@@ -290,7 +294,9 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
               <div className="mt-2 h-2 rounded-full bg-cool">
                 <div className="h-2 rounded-full bg-emerald" style={{ width: `${progress}%` }} />
               </div>
-              <p className="mt-2 text-xs font-bold text-charcoal/60">{hasDescriptiveDraft ? `${descriptiveWordCount} descriptive words saved` : "Descriptive response empty"}</p>
+              <p className="mt-2 text-xs font-bold text-charcoal/60">
+                {hasDescriptiveDraft ? `${descriptiveWordCount} descriptive words saved` : hasDescriptiveUpload ? "Solution file selected" : "Descriptive response empty"}
+              </p>
             </div>
           </div>
         </div>
@@ -462,6 +468,35 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
                   <span>{descriptiveWordCount} words</span>
                   <span>{attempt.descriptiveAnswer.length.toLocaleString()} characters</span>
                 </div>
+                <label className="mt-4 grid gap-2 text-sm font-black text-charcoal" htmlFor="past-paper-solution-upload">
+                  Upload solution file
+                  <input
+                    id="past-paper-solution-upload"
+                    type="file"
+                    accept="application/pdf,image/*"
+                    disabled={isReviewing}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      updateAttempt((previous) => ({ ...previous, descriptiveSolutionFileName: file?.name ?? "" }));
+                    }}
+                    className="rounded-md border border-navy/10 bg-white px-3 py-2 text-sm font-semibold normal-case text-charcoal file:mr-3 file:rounded-md file:border-0 file:bg-emerald file:px-3 file:py-2 file:text-sm file:font-black file:text-white disabled:opacity-60"
+                  />
+                </label>
+                {attempt.descriptiveSolutionFileName ? (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-emerald/20 bg-mint px-3 py-2 text-xs font-bold text-charcoal/70">
+                    <span className="min-w-0 truncate">Selected: {attempt.descriptiveSolutionFileName}</span>
+                    {!isReviewing ? (
+                      <button
+                        type="button"
+                        className="font-black text-emerald underline"
+                        onClick={() => updateAttempt((previous) => ({ ...previous, descriptiveSolutionFileName: "" }))}
+                      >
+                        Clear
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+                <p className="mt-3 text-xs font-semibold leading-5 text-charcoal/60">Typed work is saved in this browser. Uploaded files stay on your device for now.</p>
               </div>
             ) : (
               <div className="mt-4 space-y-2">

@@ -1,15 +1,18 @@
 import { PastPapersBrowser } from "@/components/interactive/past-papers-browser";
 import { ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
-import { getPublishedPastPapers, getPublishedQuestions } from "@/lib/public-datasets";
+import { getDatabasePublishedPastPapers, getDatabasePublishedQuestions } from "@/lib/public-datasets";
 
 export const metadata = {
   title: "Past Papers",
 };
 
 export default async function PastPapersPage() {
-  const [pastPapers, questions] = await Promise.all([getPublishedPastPapers(), getPublishedQuestions()]);
+  const [pastPapers, questions] = await Promise.all([getDatabasePublishedPastPapers(), getDatabasePublishedQuestions()]);
   const totalQuestions = questions.filter((question) => question.paperId).length;
   const latest = [...pastPapers].sort((a, b) => b.year - a.year)[0];
+  const years = pastPapers.map((paper) => paper.year);
+  const yearLabel = years.length > 0 ? `${Math.min(...years)}-${Math.max(...years)}` : "0";
+  const subjectCount = new Set(pastPapers.map((paper) => paper.subject)).size;
 
   return (
     <>
@@ -20,8 +23,8 @@ export default async function PastPapersPage() {
         stats={[
           { label: "Indexed Papers", value: pastPapers.length.toString(), icon: "file-text" },
           { label: "Extracted Questions", value: totalQuestions.toLocaleString(), icon: "clipboard-check" },
-          { label: "Years", value: "2022-2025", icon: "calendar" },
-          { label: "Subjects", value: "4", icon: "atom" },
+          { label: "Years", value: yearLabel, icon: "calendar" },
+          { label: "Subjects", value: subjectCount.toString(), icon: "atom" },
         ]}
       />
       <section className="py-10">

@@ -197,9 +197,17 @@ export async function getPublishedPastPapers() {
   return rows ?? pastPapers;
 }
 
+export async function getDatabasePublishedPastPapers() {
+  return (await getCachedPublishedPastPapers()) ?? [];
+}
+
 export async function getPublishedQuestions() {
   const rows = await getCachedPublishedQuestions();
   return rows ?? questions;
+}
+
+export async function getDatabasePublishedQuestions() {
+  return (await getCachedPublishedQuestions()) ?? [];
 }
 
 export async function getPublishedPaperById(id: string) {
@@ -207,8 +215,18 @@ export async function getPublishedPaperById(id: string) {
   return rows.find((paper) => paper.id === id) ?? null;
 }
 
+export async function getDatabasePublishedPaperById(id: string) {
+  const rows = await getDatabasePublishedPastPapers();
+  return rows.find((paper) => paper.id === id) ?? null;
+}
+
 export async function getPublishedQuestionsForPaper(id: string) {
   const rows = await getPublishedQuestions();
+  return rows.filter((question) => question.paperId === id);
+}
+
+export async function getDatabasePublishedQuestionsForPaper(id: string) {
+  const rows = await getDatabasePublishedQuestions();
   return rows.filter((question) => question.paperId === id);
 }
 
