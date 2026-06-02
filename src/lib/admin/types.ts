@@ -78,22 +78,6 @@ export type AdminDashboardData = {
     admins: number;
   };
   content: ContentListItem[];
-  workflowEvents: {
-    id: string;
-    title: string;
-    fromStatus: ContentStatus | null;
-    toStatus: ContentStatus;
-    note: string;
-    createdAt: string;
-  }[];
-  auditLog: {
-    id: string;
-    action: string;
-    entityTable: string;
-    entityId: string;
-    summary: string;
-    createdAt: string;
-  }[];
   source: "supabase" | "unavailable";
 };
 
@@ -118,51 +102,6 @@ export type ResourceAdminItem = {
   localUrl: string;
   sourceUrl: string;
   createdBy: string | null;
-  updatedAt: string;
-};
-
-export type PastPaperAdminItem = {
-  id: string;
-  status: ContentStatus;
-  title: string;
-  exam: string;
-  subject: string;
-  year: number;
-  pages: number;
-  resourceUrl: string;
-  sourceUrl: string;
-  scanned: boolean;
-  pageImages: string[];
-  questionCount: number;
-  mcqCount: number;
-  descriptiveCount: number;
-  partICount: number;
-  partIICount: number;
-  updatedAt: string;
-};
-
-export type QuestionAdminItem = {
-  id: string;
-  status: ContentStatus;
-  paperId: string;
-  paperSubject: string;
-  number: number;
-  displayNumber: string;
-  subject: string;
-  topic: string;
-  difficulty: string;
-  type: "MCQ" | "Long";
-  section: string;
-  sectionTitle: string;
-  exam: string;
-  year: number | null;
-  source: string;
-  prompt: string;
-  options: string[];
-  answer: number | null;
-  solution: string;
-  page: number | null;
-  figure: string;
   updatedAt: string;
 };
 

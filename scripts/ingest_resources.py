@@ -13,6 +13,15 @@ from pypdf import PdfReader
 from rapidocr_onnxruntime import RapidOCR
 
 
+"""
+Legacy local-resource importer.
+
+Production resources are now uploaded from the admin dashboard into Supabase
+Storage and saved in the resources table. This script is kept only for
+provenance/re-ingestion work and should not be used as the normal resource
+publishing path.
+"""
+
 ROOT = Path(__file__).resolve().parents[1]
 TMP = ROOT / ".tmp" / "resource-ingest"
 DRIVE = TMP / "drive"

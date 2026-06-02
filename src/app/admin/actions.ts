@@ -3,10 +3,10 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { contentFormSchema, moderatorAccessSchema, otpRequestSchema, otpVerifySchema, pastPaperFormSchema, questionFormSchema, resourceFormSchema, transitionSchema } from "@/lib/admin/schema";
+import { contentFormSchema, moderatorAccessSchema, otpRequestSchema, otpVerifySchema, resourceFormSchema, transitionSchema } from "@/lib/admin/schema";
 import type { ActionState } from "@/lib/admin/types";
-import { getAdminContext, requireAdminAccess, requireDatasetOwner, requireOwner } from "@/lib/admin/auth";
-import { deleteContentItem, deleteResourceItem, saveContentItem, saveModeratorAccess, savePastPaperItem, saveQuestionItem, saveResourceItem, transitionContentItem } from "@/lib/admin/content";
+import { getAdminContext, requireAdminAccess, requireOwner } from "@/lib/admin/auth";
+import { deleteContentItem, deleteResourceItem, saveContentItem, saveModeratorAccess, saveResourceItem, transitionContentItem } from "@/lib/admin/content";
 import { createSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 
 const initialError = "Something went wrong. Please try again.";
@@ -186,33 +186,6 @@ export async function saveResourceAction(_: ActionState, formData: FormData): Pr
   try {
     const result = await saveResourceItem(parsed.data, context, formData.get("resourceFile"));
     return { ok: true, message: `Saved resource ${result.id}.` };
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : initialError };
-  }
-}
-
-export async function savePastPaperAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const context = await requireDatasetOwner();
-  const parsed = pastPaperFormSchema.safeParse({
-    ...Object.fromEntries(formData),
-    scanned: formData.get("scanned") === "on",
-  });
-  if (!parsed.success) return zodError(parsed.error);
-  try {
-    const result = await savePastPaperItem(parsed.data, context);
-    return { ok: true, message: `Saved past paper ${result.id}.` };
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : initialError };
-  }
-}
-
-export async function saveQuestionAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const context = await requireDatasetOwner();
-  const parsed = questionFormSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return zodError(parsed.error);
-  try {
-    const result = await saveQuestionItem(parsed.data, context);
-    return { ok: true, message: `Saved question ${result.id}.` };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : initialError };
   }

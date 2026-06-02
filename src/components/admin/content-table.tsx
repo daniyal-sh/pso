@@ -23,7 +23,7 @@ export function ContentTable({ items, editBasePath, context }: { items: ContentL
           {items.map((item) => (
             <tr key={item.id} className="border-b border-white/10">
               <td className="px-4 py-4">
-                <Link href={`${item.kind === "guide" ? "/admin/guides" : item.kind === "alumni_story" ? "/admin/alumni" : editBasePath}?edit=${item.id}`} className="font-black text-white hover:text-gold">
+                <Link href={`${item.kind === "guide" ? "/admin/guides" : editBasePath}?edit=${item.id}`} className="font-black text-white hover:text-gold">
                   {item.title}
                 </Link>
                 <p className="mt-1 font-mono text-xs text-white/45">{item.slug}</p>

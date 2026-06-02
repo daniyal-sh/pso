@@ -27,6 +27,8 @@
 /tmp/
 /output/
 /.agents/
+/public/resources/
+/src/data/resources.json
 skills-lock.json
 
 # debug

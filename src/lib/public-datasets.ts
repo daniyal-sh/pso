@@ -1,7 +1,7 @@
 import "server-only";
 
 import { unstable_cache } from "next/cache";
-import { pastPapers, questions, type PastPaper, type Question, type ResourceItem } from "@/lib/content-data";
+import type { PastPaper, Question, ResourceItem } from "@/lib/content-data";
 import { getSupabaseConfig, getSupabaseServiceClient } from "@/lib/supabase/server";
 
 type ResourceRow = {
@@ -148,7 +148,7 @@ async function queryPublishedResources() {
 
 async function queryPublishedPastPapers() {
   const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return null;
+  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
   const { data, error } = await supabase
     .from("past_papers")
     .select("id,title,exam,subject,year,pages,resource_url,source_url,scanned,page_images,question_count,mcq_count,descriptive_count,part_i_count,part_ii_count")
@@ -158,14 +158,14 @@ async function queryPublishedPastPapers() {
 
   if (error) {
     console.error("Published past papers query failed", error);
-    return null;
+    return [];
   }
   return (data ?? []).map((row) => rowToPastPaper(row as PastPaperRow));
 }
 
 async function queryPublishedQuestions() {
   const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return null;
+  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
   const { data, error } = await supabase
     .from("questions")
     .select("id,paper_id,paper_subject,number,display_number,subject,topic,difficulty,type,section,section_title,exam,year,source,prompt,options,answer,solution,page,figure")
@@ -176,7 +176,7 @@ async function queryPublishedQuestions() {
 
   if (error) {
     console.error("Published questions query failed", error);
-    return null;
+    return [];
   }
   return (data ?? []).map((row) => rowToQuestion(row as QuestionRow));
 }
@@ -202,21 +202,19 @@ export async function getPublishedResources() {
 }
 
 export async function getPublishedPastPapers() {
-  const rows = await getCachedPublishedPastPapers();
-  return rows ?? pastPapers;
+  return getCachedPublishedPastPapers();
 }
 
 export async function getDatabasePublishedPastPapers() {
-  return (await getCachedPublishedPastPapers()) ?? [];
+  return getPublishedPastPapers();
 }
 
 export async function getPublishedQuestions() {
-  const rows = await getCachedPublishedQuestions();
-  return rows ?? questions;
+  return getCachedPublishedQuestions();
 }
 
 export async function getDatabasePublishedQuestions() {
-  return (await getCachedPublishedQuestions()) ?? [];
+  return getPublishedQuestions();
 }
 
 export async function getPublishedPaperById(id: string) {

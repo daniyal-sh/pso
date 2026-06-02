@@ -1,13 +1,16 @@
-Content License Placeholder
+Content and Asset Notes
 
-This repository currently contains placeholder educational content and mock data.
+Pakistan Olympiads contains a mix of original platform code, original editorial content, imported guide references, past-paper metadata, extracted question metadata, generated paper assets, and externally authored educational material.
 
-Before accepting real guide imports, past paper metadata, problem statements, or contributor essays, the project should define:
+Treat this repository as project source, not as a blanket license grant for all educational content inside it.
 
-- The license for original Pakistan Olympiads content.
-- Attribution requirements for contributors.
-- Rules for imported or adapted public sources.
-- Whether past paper text, figures, and solutions can be redistributed.
-- A takedown and correction process.
+Guidelines:
 
-Do not treat this placeholder as legal advice.
+- Original Pakistan Olympiads code is owned by the project maintainers unless otherwise stated.
+- Original Pakistan Olympiads articles, guides, and dashboard-authored content should keep author attribution.
+- Imported or adapted guides must preserve source attribution and should be reviewed before publication.
+- Past-paper PDFs, question text, figures, and solutions may have separate rights from their original publishers or authors.
+- Legacy local resource PDFs should not be restored as the production resource source; upload approved resources through Supabase Storage.
+- If a rights holder requests correction or takedown, remove or revise the affected content promptly.
+
+This file is not legal advice. Confirm licensing and redistribution rights before publishing third-party material.

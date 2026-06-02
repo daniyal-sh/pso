@@ -95,10 +95,6 @@ export function canDelete(context: AdminContext) {
   return isOwner(context);
 }
 
-export function canManageDatasets(context: AdminContext) {
-  return isOwner(context);
-}
-
 export async function getAdminContext(): Promise<AdminContext> {
   const config = getSupabaseConfig();
   const base: AdminContext = {
@@ -193,12 +189,6 @@ export async function requireGuideAccess() {
 export async function requireResourceAccess() {
   const context = await requireAdminAccess();
   if (!isOwner(context) && context.permissions.resourceSubjects.length === 0) redirect("/admin?error=forbidden");
-  return context;
-}
-
-export async function requireDatasetOwner() {
-  const context = await requireAdminAccess();
-  if (!isOwner(context)) redirect("/admin?error=forbidden");
   return context;
 }
 

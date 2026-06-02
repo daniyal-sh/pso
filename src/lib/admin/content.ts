@@ -1,7 +1,6 @@
 import "server-only";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { pastPapers, questions } from "@/lib/content-data";
 import type {
   AdminContext,
   AdminDashboardData,
@@ -11,8 +10,6 @@ import type {
   ContentListItem,
   ContentStatus,
   ModeratorAdminItem,
-  PastPaperAdminItem,
-  QuestionAdminItem,
   ResourceAdminItem,
 } from "@/lib/admin/types";
 import { canDelete, canManageContentKind, canManageResourceSubject, isOwner, permissionsFromRows } from "@/lib/admin/auth";
@@ -72,10 +69,6 @@ type ResourceMutation = Omit<ResourceAdminItem, "id" | "updatedAt" | "sizeBytes"
   id?: string;
   sizeBytes: number;
 };
-
-type PastPaperMutation = Omit<PastPaperAdminItem, "updatedAt">;
-
-type QuestionMutation = Omit<QuestionAdminItem, "updatedAt">;
 
 const maxResourceUploadBytes = 50 * 1024 * 1024;
 const allowedResourceMimeTypes = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
@@ -155,55 +148,6 @@ function isUploadFile(value: unknown): value is File {
   return typeof File !== "undefined" && value instanceof File && value.size > 0;
 }
 
-function fallbackPastPapers(): PastPaperAdminItem[] {
-  return pastPapers.map((paper) => ({
-    id: paper.id,
-    status: "published",
-    title: paper.title,
-    exam: paper.exam,
-    subject: paper.subject,
-    year: paper.year,
-    pages: paper.pages,
-    resourceUrl: paper.resourceUrl ?? "",
-    sourceUrl: paper.sourceUrl,
-    scanned: paper.scanned,
-    pageImages: paper.pageImages,
-    questionCount: paper.questionCount,
-    mcqCount: paper.mcqCount,
-    descriptiveCount: paper.descriptiveCount,
-    partICount: paper.partICount,
-    partIICount: paper.partIICount,
-    updatedAt: "",
-  }));
-}
-
-function fallbackQuestions(): QuestionAdminItem[] {
-  return questions.map((question) => ({
-    id: question.id,
-    status: "published",
-    paperId: question.paperId,
-    paperSubject: question.paperSubject,
-    number: question.number,
-    displayNumber: question.displayNumber,
-    subject: question.subject,
-    topic: question.topic,
-    difficulty: question.difficulty,
-    type: question.type,
-    section: question.section,
-    sectionTitle: question.sectionTitle,
-    exam: question.exam,
-    year: question.year,
-    source: question.source,
-    prompt: question.prompt,
-    options: question.options,
-    answer: question.answer,
-    solution: question.solution,
-    page: question.page,
-    figure: question.figure,
-    updatedAt: "",
-  }));
-}
-
 export async function getAdminDashboardData(context?: AdminContext): Promise<AdminDashboardData> {
   const supabase = getSupabaseServiceClient();
   if (!getSupabaseConfig().hasServiceRole || !supabase) {
@@ -215,13 +159,11 @@ export async function getAdminDashboardData(context?: AdminContext): Promise<Adm
         reviewQueue: 0,
         scheduledContent: 0,
         resources: 0,
-        pastPapers: pastPapers.length,
-        questions: questions.length,
+        pastPapers: 0,
+        questions: 0,
         admins: 0,
       },
       content: [],
-      workflowEvents: [],
-      auditLog: [],
     };
   }
 
@@ -239,14 +181,12 @@ export async function getAdminDashboardData(context?: AdminContext): Promise<Adm
     contentQuery = allowedKinds.length > 0 ? contentQuery.eq("created_by", context.user?.id ?? "").in("kind", allowedKinds) : contentQuery.eq("id", "__no_access__");
   }
 
-  const [contentResult, resourcesResult, papersResult, questionsResult, adminsResult, workflowResult, auditResult] = await Promise.all([
+  const [contentResult, resourcesResult, papersResult, questionsResult, adminsResult] = await Promise.all([
     contentQuery,
     supabase.from("resources").select("id", { count: "exact", head: true }),
     supabase.from("past_papers").select("id", { count: "exact", head: true }),
     supabase.from("questions").select("id", { count: "exact", head: true }),
     supabase.from("admin_members").select("id", { count: "exact", head: true }),
-    supabase.from("workflow_events").select("id,from_status,to_status,note,created_at,content_items(title)").order("created_at", { ascending: false }).limit(8),
-    supabase.from("audit_log").select("id,action,entity_table,entity_id,summary,created_at").order("created_at", { ascending: false }).limit(8),
   ]);
 
   const content = ((contentResult.data ?? []) as ContentRow[]).map(toListItem);
@@ -263,32 +203,6 @@ export async function getAdminDashboardData(context?: AdminContext): Promise<Adm
       admins: adminsResult.count ?? 0,
     },
     content,
-    workflowEvents: (workflowResult.data ?? []).map((event) => {
-      const row = event as unknown as {
-        id: string;
-        from_status: ContentStatus | null;
-        to_status: ContentStatus;
-        note: string;
-        created_at: string;
-        content_items: { title: string } | null;
-      };
-      return {
-        id: row.id,
-        title: row.content_items?.title ?? "Content item",
-        fromStatus: row.from_status,
-        toStatus: row.to_status,
-        note: row.note,
-        createdAt: row.created_at,
-      };
-    }),
-    auditLog: (auditResult.data ?? []).map((row) => ({
-      id: row.id,
-      action: row.action,
-      entityTable: row.entity_table,
-      entityId: row.entity_id,
-      summary: row.summary,
-      createdAt: row.created_at,
-    })),
   };
 }
 
@@ -579,207 +493,6 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
   });
   revalidateTag("published-resources", "max");
   revalidatePath("/resources");
-  return { id: data.id as string, updatedAt: datasetTimestamp(data) };
-}
-
-export async function getAdminPastPapers() {
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return fallbackPastPapers();
-  const { data, error } = await supabase
-    .from("past_papers")
-    .select("id,status,title,exam,subject,year,pages,resource_url,source_url,scanned,page_images,question_count,mcq_count,descriptive_count,part_i_count,part_ii_count,updated_at")
-    .order("year", { ascending: false })
-    .order("subject", { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    status: row.status,
-    title: row.title,
-    exam: row.exam,
-    subject: row.subject,
-    year: row.year,
-    pages: row.pages,
-    resourceUrl: row.resource_url ?? "",
-    sourceUrl: row.source_url,
-    scanned: row.scanned,
-    pageImages: row.page_images ?? [],
-    questionCount: row.question_count,
-    mcqCount: row.mcq_count,
-    descriptiveCount: row.descriptive_count,
-    partICount: row.part_i_count,
-    partIICount: row.part_ii_count,
-    updatedAt: row.updated_at,
-  })) satisfies PastPaperAdminItem[];
-}
-
-export async function getAdminPastPaperItem(id?: string) {
-  if (!id) return null;
-  const rows = await getAdminPastPapers();
-  return rows.find((row) => row.id === id) ?? null;
-}
-
-export async function savePastPaperItem(input: PastPaperMutation, context: AdminContext) {
-  assertOwner(context);
-  const supabase = getSupabaseServiceClient();
-  if (!supabase) throw new Error("Supabase service role is not configured.");
-  const { data, error } = await supabase
-    .from("past_papers")
-    .upsert(
-      {
-        id: input.id,
-        status: input.status,
-        title: input.title,
-        exam: input.exam,
-        subject: input.subject,
-        year: input.year,
-        pages: input.pages,
-        resource_url: input.resourceUrl || null,
-        source_url: input.sourceUrl,
-        scanned: input.scanned,
-        page_images: input.pageImages,
-        question_count: input.questionCount,
-        mcq_count: input.mcqCount,
-        descriptive_count: input.descriptiveCount,
-        part_i_count: input.partICount,
-        part_ii_count: input.partIICount,
-      },
-      { onConflict: "id" },
-    )
-    .select("id,status,updated_at")
-    .single();
-  if (error) throw error;
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "past_paper.upsert",
-    entity_table: "past_papers",
-    entity_id: input.id,
-    summary: `${input.title} saved as ${data.status}.`,
-  });
-  revalidateTag("published-past-papers", "max");
-  revalidatePath("/past-papers");
-  revalidatePath(`/past-papers/${input.id}`);
-  return { id: data.id as string, updatedAt: datasetTimestamp(data) };
-}
-
-export async function getAdminQuestions() {
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return fallbackQuestions();
-  const { data, error } = await supabase
-    .from("questions")
-    .select("id,status,paper_id,paper_subject,number,display_number,subject,topic,difficulty,type,section,section_title,exam,year,source,prompt,options,answer,solution,page,figure,updated_at")
-    .order("year", { ascending: false })
-    .order("paper_id", { ascending: true })
-    .order("number", { ascending: true })
-    .limit(1500);
-  if (error) throw error;
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    status: row.status,
-    paperId: row.paper_id ?? "",
-    paperSubject: row.paper_subject,
-    number: row.number,
-    displayNumber: row.display_number,
-    subject: row.subject,
-    topic: row.topic,
-    difficulty: row.difficulty,
-    type: row.type === "Long" ? "Long" : "MCQ",
-    section: row.section,
-    sectionTitle: row.section_title,
-    exam: row.exam,
-    year: row.year,
-    source: row.source,
-    prompt: row.prompt,
-    options: Array.isArray(row.options) ? row.options.map(String) : [],
-    answer: row.answer,
-    solution: row.solution,
-    page: row.page,
-    figure: row.figure,
-    updatedAt: row.updated_at,
-  })) satisfies QuestionAdminItem[];
-}
-
-export async function getAdminQuestionItem(id?: string) {
-  if (!id) return null;
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return fallbackQuestions().find((row) => row.id === id) ?? null;
-  const { data, error } = await supabase
-    .from("questions")
-    .select("id,status,paper_id,paper_subject,number,display_number,subject,topic,difficulty,type,section,section_title,exam,year,source,prompt,options,answer,solution,page,figure,updated_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  return {
-    id: data.id,
-    status: data.status,
-    paperId: data.paper_id ?? "",
-    paperSubject: data.paper_subject,
-    number: data.number,
-    displayNumber: data.display_number,
-    subject: data.subject,
-    topic: data.topic,
-    difficulty: data.difficulty,
-    type: data.type === "Long" ? "Long" : "MCQ",
-    section: data.section,
-    sectionTitle: data.section_title,
-    exam: data.exam,
-    year: data.year,
-    source: data.source,
-    prompt: data.prompt,
-    options: Array.isArray(data.options) ? data.options.map(String) : [],
-    answer: data.answer,
-    solution: data.solution,
-    page: data.page,
-    figure: data.figure,
-    updatedAt: data.updated_at,
-  } satisfies QuestionAdminItem;
-}
-
-export async function saveQuestionItem(input: QuestionMutation, context: AdminContext) {
-  assertOwner(context);
-  const supabase = getSupabaseServiceClient();
-  if (!supabase) throw new Error("Supabase service role is not configured.");
-  const { data, error } = await supabase
-    .from("questions")
-    .upsert(
-      {
-        id: input.id,
-        status: input.status,
-        paper_id: input.paperId || null,
-        paper_subject: input.paperSubject,
-        number: input.number,
-        display_number: input.displayNumber,
-        subject: input.subject,
-        topic: input.topic,
-        difficulty: input.difficulty,
-        type: input.type,
-        section: input.section,
-        section_title: input.sectionTitle,
-        exam: input.exam,
-        year: input.year,
-        source: input.source,
-        prompt: input.prompt,
-        options: input.options,
-        answer: input.answer,
-        solution: input.solution,
-        page: input.page,
-        figure: input.figure,
-      },
-      { onConflict: "id" },
-    )
-    .select("id,status,updated_at")
-    .single();
-  if (error) throw error;
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "question.upsert",
-    entity_table: "questions",
-    entity_id: input.id,
-    summary: `${input.source} ${input.displayNumber || input.number} saved as ${data.status}.`,
-  });
-  revalidateTag("published-questions", "max");
-  revalidatePath("/question-bank");
-  if (input.paperId) revalidatePath(`/past-papers/${input.paperId}`);
   return { id: data.id as string, updatedAt: datasetTimestamp(data) };
 }
 
