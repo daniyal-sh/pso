@@ -306,7 +306,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
           </div>
 
           <div className="bg-cool p-2 sm:p-3 md:p-5">
-            <PdfViewer title={`${paper.title} PDF`} url={paper.resourceUrl} heightClassName="h-[70vh] min-h-[520px]" unavailableMessage="Original PDF is not available for this paper yet." />
+            <PdfViewer title={`${paper.title} PDF`} url={paper.resourceUrl} unavailableMessage="Original PDF is not available for this paper yet." />
           </div>
         </section>
 

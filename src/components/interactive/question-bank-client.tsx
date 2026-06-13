@@ -435,7 +435,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
               </div>
             </div>
 
-            <div className="py-6">
+            <div className="py-4 sm:py-6">
               {active.pdf.type === "MCQ" ? (
                 <QuestionImage
                   title={`Question ${active.pdf.displayNumber}`}
@@ -452,13 +452,13 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
             </div>
 
             {active.pdf.type === "MCQ" ? (
-              <div className="grid gap-3">
+              <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2.5 sm:gap-3">
                 {["A", "B", "C", "D"].map((label, index) => (
                   <button
                     key={`${active.id}-${index}`}
                     onClick={() => chooseAnswer(index)}
                     type="button"
-                    className={cn("flex min-h-14 items-center justify-center rounded-md border px-3 py-3 text-center text-lg font-black leading-6 transition sm:px-4", optionTone(active, index, selectedAnswer))}
+                    className={cn("flex min-h-16 items-center justify-center rounded-md border px-3 py-3 text-center text-xl font-black leading-6 transition sm:min-h-18 sm:px-4 sm:text-2xl", optionTone(active, index, selectedAnswer))}
                   >
                     {label}
                   </button>
