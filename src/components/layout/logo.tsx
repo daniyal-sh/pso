@@ -1,19 +1,18 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 
 export function Logo({ compact = false, className }: { compact?: boolean; className?: string }) {
   return (
-    <Link href="/" className={cn("flex items-center gap-3", className)} aria-label="Pakistan Olympiads home">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-emerald shadow-sm">
-        <Icon name="moonstar" className="h-7 w-7" strokeWidth={2.4} />
-      </span>
-      {!compact && (
-        <span className="leading-none">
-          <span className="block text-sm font-black uppercase text-white">Pakistan</span>
-          <span className="block text-sm font-black uppercase text-white">Olympiads</span>
-        </span>
-      )}
+    <Link href="/" className={cn("flex shrink-0 items-center", className)} aria-label="Pakistan Olympiads home">
+      <Image
+        src={compact ? "/brand/pakistan-olympiads-mark-white.png" : "/brand/pakistan-olympiads-horizontal-white.png"}
+        alt="Pakistan Olympiads"
+        width={compact ? 715 : 929}
+        height={compact ? 715 : 190}
+        priority
+        className={compact ? "h-11 w-11 object-contain" : "h-12 w-auto object-contain sm:h-14"}
+      />
     </Link>
   );
 }

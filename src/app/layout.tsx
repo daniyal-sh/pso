@@ -26,6 +26,13 @@ export const metadata: Metadata = {
   },
   description:
     "A premium open-source learning platform for Pakistan's science olympiad community.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
