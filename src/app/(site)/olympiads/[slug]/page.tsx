@@ -88,7 +88,17 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
         <Container className="mb-4">
           <SectionTitle title="Selection pathway" />
         </Container>
-        <Pathway steps={pathwaySteps} />
+        <Pathway steps={track.pathway ?? pathwaySteps} />
+        {track.pathwayVerifiedAt ? (
+          <Container className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-charcoal/60">
+            <p>Pakistan selection pathway last verified {track.pathwayVerifiedAt}. Selection arrangements may change.</p>
+            {track.officialUrl ? (
+              <a href={track.officialUrl} target="_blank" rel="noreferrer" className="font-black text-emerald hover:underline">
+                Official {track.exam} website
+              </a>
+            ) : null}
+          </Container>
+        ) : null}
       </section>
 
       <section className="pb-10">

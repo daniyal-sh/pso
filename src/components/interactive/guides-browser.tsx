@@ -5,10 +5,10 @@ import { Icon } from "@/components/icon";
 import { GuidePreviewCard } from "@/components/sections/cards";
 import type { Guide } from "@/lib/guides";
 import { cn } from "@/lib/utils";
-
-const subjects = ["All", "General", "Mathematics", "Physics", "Informatics", "Biology", "Chemistry", "Astronomy"];
+import { sortSubjects } from "@/lib/subjects";
 
 export function GuidesBrowser({ guides }: { guides: Guide[] }) {
+  const subjects = useMemo(() => ["All", ...sortSubjects(Array.from(new Set(guides.map((guide) => guide.category))))], [guides]);
   const [subject, setSubject] = useState("All");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("Featured");

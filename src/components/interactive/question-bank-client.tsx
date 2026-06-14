@@ -8,6 +8,7 @@ import { Badge } from "@/components/sections/common";
 import type { Question } from "@/lib/content-data";
 import { questionPdfMetadata } from "@/lib/question-pdf-paths";
 import { cn } from "@/lib/utils";
+import { sortSubjects, subjectIcon } from "@/lib/subjects";
 
 type PracticeMode = "Subject MCQs" | "Common MCQs" | "Descriptive";
 type QuestionBankProgress = {
@@ -29,22 +30,11 @@ const modes: { label: PracticeMode; section: string; icon: string; hint: string 
 ];
 
 const QUESTION_BANK_STORAGE_KEY = "pso:question-bank-progress:v1";
-const subjectOrder = ["Mathematics", "Physics", "Biology", "Chemistry"];
 type QuestionPdfMetadata = (typeof questionPdfMetadata)[keyof typeof questionPdfMetadata];
 type QuestionWithPdf = Question & {
   pdf: QuestionPdfMetadata;
 };
 
-function sortSubjects(items: string[]) {
-  return [...items].sort((a, b) => {
-    const aIndex = subjectOrder.indexOf(a);
-    const bIndex = subjectOrder.indexOf(b);
-    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-    if (aIndex !== -1) return -1;
-    if (bIndex !== -1) return 1;
-    return a.localeCompare(b);
-  });
-}
 
 function hashQuestion(id: string, salt: number) {
   let hash = 2166136261 ^ salt;
@@ -53,13 +43,6 @@ function hashQuestion(id: string, salt: number) {
     hash = Math.imul(hash, 16777619);
   }
   return hash >>> 0;
-}
-
-function subjectIcon(subject: string) {
-  if (subject === "Mathematics") return "pi";
-  if (subject === "Chemistry") return "flask";
-  if (subject === "Biology") return "dna";
-  return "atom";
 }
 
 function optionTone(question: Question, index: number, selectedAnswer: number | null) {

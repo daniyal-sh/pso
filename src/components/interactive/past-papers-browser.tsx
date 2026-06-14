@@ -6,12 +6,12 @@ import { Icon } from "@/components/icon";
 import { Badge } from "@/components/sections/common";
 import type { PastPaper } from "@/lib/content-data";
 import { cn } from "@/lib/utils";
-
-const subjects = ["All", "Mathematics", "Physics", "Biology", "Chemistry"];
+import { sortSubjects, subjectIcon } from "@/lib/subjects";
 
 export function PastPapersBrowser({ papers }: { papers: PastPaper[] }) {
   const [subject, setSubject] = useState("All");
   const [year, setYear] = useState("All");
+  const subjects = useMemo(() => ["All", ...sortSubjects(Array.from(new Set(papers.map((paper) => paper.subject))))], [papers]);
 
   const years = useMemo(() => ["All", ...Array.from(new Set(papers.map((paper) => String(paper.year)))).sort().reverse()], [papers]);
   const filtered = useMemo(() => {
@@ -47,7 +47,7 @@ export function PastPapersBrowser({ papers }: { papers: PastPaper[] }) {
           <Link key={paper.id} href={`/past-papers/${paper.id}`} className="card-surface group rounded-md p-5 transition hover:-translate-y-1">
             <div className="flex items-start justify-between gap-3">
               <span className="flex h-12 w-12 items-center justify-center rounded-md bg-mint text-emerald">
-                <Icon name={paper.subject === "Mathematics" ? "pi" : paper.subject === "Chemistry" ? "flask" : paper.subject === "Biology" ? "dna" : "atom"} className="h-6 w-6" />
+                <Icon name={subjectIcon(paper.subject)} className="h-6 w-6" />
               </span>
               <Badge>{paper.year}</Badge>
             </div>

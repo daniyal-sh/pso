@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { Badge, EmptyVisual } from "@/components/sections/common";
 import { cn } from "@/lib/utils";
+import { subjectIcon } from "@/lib/subjects";
 
 export function TrackCard({
   track,
@@ -107,6 +108,8 @@ const guideVisuals: Record<string, { icon: string; label: string; accent: string
   Biology: { icon: "dna", label: "Systems", accent: "from-emerald/15 to-lime-100" },
   Mathematics: { icon: "pi", label: "Proofs", accent: "from-gold/25 to-mint" },
   Informatics: { icon: "code", label: "Algorithms", accent: "from-cyan-100 to-mint" },
+  "Artificial Intelligence": { icon: "brain-circuit", label: "Models", accent: "from-cyan-100 to-emerald/15" },
+  "Nuclear Science": { icon: "radiation", label: "Nuclear systems", accent: "from-amber-100 to-teal/15" },
 };
 
 function GuideVisual({ guide }: { guide: { title: string; category: string } }) {
@@ -157,7 +160,7 @@ export function BlogCard({
 }) {
   return (
     <Link href={`/blog/${post.slug}`} className="card-surface group grid min-w-0 overflow-hidden rounded-md transition hover:-translate-y-1 sm:grid-cols-[150px_minmax(0,1fr)]">
-      <EmptyVisual title={post.title} icon={post.category === "Astronomy" ? "orbit" : post.category === "Chemistry" ? "flask" : "atom"} />
+      <EmptyVisual title={post.title} icon={subjectIcon(post.category)} />
       <div className="min-w-0 p-4">
         <Badge>{post.category}</Badge>
         <h3 className="mt-3 break-words text-base font-black text-charcoal">{post.title}</h3>

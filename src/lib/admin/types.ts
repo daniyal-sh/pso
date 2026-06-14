@@ -1,4 +1,5 @@
-export const adminSubjects = ["Astronomy", "Biology", "Chemistry", "Mathematics", "Physics"] as const;
+export { adminSubjects } from "@/lib/subjects";
+import { adminSubjects } from "@/lib/subjects";
 export const moderatorPermissionKinds = ["resources_subject", "blog", "guide"] as const;
 export const adminMemberStatuses = ["active", "disabled"] as const;
 export const contentKinds = ["blog_post", "guide", "alumni_story", "resource", "past_paper", "question", "solution"] as const;

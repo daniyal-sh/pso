@@ -1,6 +1,7 @@
 import {
   Activity,
   Atom,
+  BrainCircuit,
   BookOpen,
   BookOpenCheck,
   Bookmark,
@@ -32,6 +33,7 @@ import {
   RotateCcw,
   Rocket,
   Route,
+  Radiation,
   Search,
   ShieldCheck,
   Shuffle,
@@ -49,6 +51,7 @@ import {
 const icons: Record<string, LucideIcon> = {
   activity: Activity,
   atom: Atom,
+  "brain-circuit": BrainCircuit,
   "book-open": BookOpen,
   book: BookOpenCheck,
   bookmark: Bookmark,
@@ -80,6 +83,7 @@ const icons: Record<string, LucideIcon> = {
   reset: RotateCcw,
   rocket: Rocket,
   route: Route,
+  radiation: Radiation,
   running: Activity,
   search: Search,
   shield: ShieldCheck,

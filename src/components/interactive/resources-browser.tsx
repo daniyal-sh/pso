@@ -7,12 +7,10 @@ import { Icon } from "@/components/icon";
 import { Badge } from "@/components/sections/common";
 import { formatBytes, type ResourceItem } from "@/lib/content-data";
 import { cn } from "@/lib/utils";
-
-const subjects = ["All", "General", "Mathematics", "Physics", "Informatics", "Biology", "Chemistry", "Astronomy"];
+import { normalizeSubject, sortSubjects } from "@/lib/subjects";
 
 function subjectFromResource(resource: ResourceItem) {
-  const subject = resource.subject === "IOAA" ? "Astronomy" : resource.subject;
-  return subjects.includes(subject) ? subject : "General";
+  return normalizeSubject(resource.subject || "General");
 }
 
 function iconForKind(kind: string) {
@@ -24,6 +22,7 @@ function iconForKind(kind: string) {
 }
 
 export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
+  const subjects = useMemo(() => ["All", ...sortSubjects(Array.from(new Set(resources.map(subjectFromResource))))], [resources]);
   const searchParams = useSearchParams();
   const requestedSubject = searchParams.get("subject");
   const [subject, setSubject] = useState(requestedSubject && subjects.includes(requestedSubject) ? requestedSubject : "All");
@@ -52,7 +51,7 @@ export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
         items: filtered.filter((resource) => subjectFromResource(resource) === item),
       }))
       .filter((group) => group.items.length > 0);
-  }, [filtered]);
+  }, [filtered, subjects]);
 
   const visibleStats = useMemo(
     () => [

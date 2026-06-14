@@ -7,6 +7,7 @@ import { MarkdownRenderer } from "@/components/sections/markdown-renderer";
 import type { ActionState, AdminContext, ContentEditorItem, ContentKind, ContentStatus } from "@/lib/admin/types";
 import { calculateReadTime, slugify } from "@/lib/admin/schema";
 import { cn } from "@/lib/utils";
+import { adminSubjects } from "@/lib/subjects";
 
 const initialState: ActionState = {
   ok: false,
@@ -106,7 +107,7 @@ export function ContentEditor({ kind, item, context }: { kind: ContentKind; item
           <div className="grid gap-4 lg:grid-cols-2">
             <Field label="Title" name="title" value={fields.title} onChange={(value) => updateField("title", value)} />
             <Field label="Slug" name="slug" value={fields.slug} onChange={(value) => updateField("slug", slugify(value))} />
-            <Field label="Category" name="category" value={fields.category} onChange={(value) => updateField("category", value)} />
+            <Field label="Category" name="category" value={fields.category} suggestions={["General", "NSTC", ...adminSubjects]} onChange={(value) => updateField("category", value)} />
             <Field label="Author" name="authorName" value={fields.authorName} onChange={(value) => updateField("authorName", value)} />
             <Field label="Read time" name="readTime" value={fields.readTime} onChange={(value) => updateField("readTime", value)} />
             <label className="block">
@@ -205,12 +206,14 @@ function Field({
   name,
   value,
   placeholder,
+  suggestions,
   onChange,
 }: {
   label: string;
   name: string;
   value: string;
   placeholder?: string;
+  suggestions?: readonly string[];
   onChange: (value: string) => void;
 }) {
   return (
@@ -218,11 +221,17 @@ function Field({
       <span className="text-xs font-bold uppercase text-white/60">{label}</span>
       <input
         name={name}
+        list={suggestions ? `${name}-suggestions` : undefined}
         className="mt-2 w-full rounded-md border border-white/10 bg-[#061117] px-3 py-3 text-sm text-white outline-none focus:border-emerald"
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
       />
+      {suggestions ? (
+        <datalist id={`${name}-suggestions`}>
+          {suggestions.map((suggestion) => <option key={suggestion} value={suggestion} />)}
+        </datalist>
+      ) : null}
     </label>
   );
 }
