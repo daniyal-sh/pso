@@ -56,7 +56,7 @@ export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
   const visibleStats = useMemo(
     () => [
       { label: "Shown", value: filtered.length.toString(), icon: "book-open" },
-      { label: "Files", value: filtered.filter((resource) => resource.localUrl).length.toString(), icon: "download" },
+      { label: "Links", value: filtered.filter((resource) => resource.localUrl || resource.sourceUrl).length.toString(), icon: "download" },
       { label: "Subjects", value: new Set(filtered.map((resource) => subjectFromResource(resource))).size.toString(), icon: "atom" },
     ],
     [filtered],
@@ -139,41 +139,47 @@ export function ResourcesBrowser({ resources }: { resources: ResourceItem[] }) {
                 <Badge>{group.items.length} resources</Badge>
               </div>
               <div className="grid gap-4 xl:grid-cols-2">
-                {group.items.map((resource) => (
-                  <article key={resource.id} className="card-surface flex min-h-56 flex-col rounded-md p-5 transition hover:-translate-y-1 hover:border-emerald/30">
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-mint text-emerald">
-                        <Icon name={iconForKind(resource.kind)} className="h-6 w-6" />
-                      </span>
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <Badge>{resource.kind}</Badge>
-                        {resource.year && <Badge>{resource.year}</Badge>}
-                      </div>
-                    </div>
-                    <h3 className="mt-4 text-xl font-black leading-snug text-charcoal">{resource.title}</h3>
-                    <p className="mt-2 flex-1 text-sm leading-6 text-charcoal/70">{resource.description}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-charcoal/55">
-                      <span className="rounded-full bg-cool px-3 py-1">{resource.pages || "Unknown"} pages</span>
-                      {resource.sizeBytes > 0 && <span className="rounded-full bg-cool px-3 py-1">{formatBytes(resource.sizeBytes)}</span>}
-                      <span className="rounded-full bg-cool px-3 py-1">{resource.folder}</span>
-                    </div>
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      {resource.localUrl ? (
-                        <Link
-                          href={resource.localUrl}
-                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald px-4 py-2 text-sm font-black text-white transition hover:bg-teal"
-                        >
-                          Open file
-                          <Icon name="download" className="h-4 w-4" />
-                        </Link>
-                      ) : (
-                        <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-navy/10 bg-cool px-4 py-2 text-sm font-black text-charcoal/55">
-                          File pending
+                {group.items.map((resource) => {
+                  const resourceHref = resource.localUrl || resource.sourceUrl;
+                  const isExternal = resourceHref.startsWith("http://") || resourceHref.startsWith("https://");
+                  return (
+                    <article key={resource.id} className="card-surface flex min-h-56 flex-col rounded-md p-5 transition hover:-translate-y-1 hover:border-emerald/30">
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-mint text-emerald">
+                          <Icon name={iconForKind(resource.kind)} className="h-6 w-6" />
                         </span>
-                      )}
-                    </div>
-                  </article>
-                ))}
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Badge>{resource.kind}</Badge>
+                          {resource.year && <Badge>{resource.year}</Badge>}
+                        </div>
+                      </div>
+                      <h3 className="mt-4 text-xl font-black leading-snug text-charcoal">{resource.title}</h3>
+                      <p className="mt-2 flex-1 text-sm leading-6 text-charcoal/70">{resource.description}</p>
+                      <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-charcoal/55">
+                        <span className="rounded-full bg-cool px-3 py-1">{resource.pages || "Unknown"} pages</span>
+                        {resource.sizeBytes > 0 && <span className="rounded-full bg-cool px-3 py-1">{formatBytes(resource.sizeBytes)}</span>}
+                        <span className="rounded-full bg-cool px-3 py-1">{resource.folder}</span>
+                      </div>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        {resourceHref ? (
+                          <Link
+                            href={resourceHref}
+                            target={isExternal ? "_blank" : undefined}
+                            rel={isExternal ? "noreferrer" : undefined}
+                            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald px-4 py-2 text-sm font-black text-white transition hover:bg-teal"
+                          >
+                            {resource.localUrl ? "Open file" : "Open link"}
+                            <Icon name="download" className="h-4 w-4" />
+                          </Link>
+                        ) : (
+                          <span className="inline-flex min-h-10 items-center justify-center rounded-md border border-navy/10 bg-cool px-4 py-2 text-sm font-black text-charcoal/55">
+                            File pending
+                          </span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ))}
