@@ -24,7 +24,7 @@ export function TrackCard({
   return (
     <Link
       href={href ?? `/olympiads/${track.slug}`}
-      className="group card-surface block w-full min-w-0 overflow-hidden rounded-md p-5 transition hover:-translate-y-1 hover:border-emerald/30 hover:shadow-xl"
+      className="group card-surface block w-full min-w-0 overflow-hidden p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <span className={cn("flex h-14 w-14 items-center justify-center rounded-md bg-gradient-to-br", track.gradient, track.color)}>
@@ -88,7 +88,7 @@ export function ResourceCard({
 }) {
   const dark = resource.tone === "dark";
   return (
-    <Link href={resource.href} className={cn("group w-full min-w-0 overflow-hidden rounded-md border border-navy/10 p-5 transition hover:-translate-y-1", resourceTone[resource.tone])}>
+    <Link href={resource.href} className={cn("group w-full min-w-0 overflow-hidden rounded-md border border-navy/10 p-5", resourceTone[resource.tone])}>
       <Badge className={cn("mb-5", dark && "border-gold/20 bg-gold/20 text-gold")}>{resource.category}</Badge>
       <Icon name={resource.icon} className={cn("h-8 w-8", dark ? "text-gold" : "text-emerald")} />
       <h3 className={cn("mt-4 break-words text-lg font-black", dark ? "text-white" : "text-charcoal")}>{resource.title}</h3>
@@ -138,7 +138,7 @@ export function GuidePreviewCard({
   guide: { slug: string; title: string; category: string; description: string; readTime: string; level: string };
 }) {
   return (
-    <Link href={`/guides/${guide.slug}`} className="card-surface group w-full min-w-0 overflow-hidden rounded-md transition hover:-translate-y-1">
+    <Link href={`/guides/${guide.slug}`} className="card-surface group w-full min-w-0 overflow-hidden rounded-md">
       <GuideVisual guide={guide} />
       <div className="p-4">
         <h3 className="break-words text-lg font-black text-charcoal">{guide.title}</h3>
@@ -159,7 +159,7 @@ export function BlogCard({
   post: { slug: string; title: string; category: string; excerpt: string; date: string; author: string; read: string };
 }) {
   return (
-    <Link href={`/blog/${post.slug}`} className="card-surface group grid w-full min-w-0 overflow-hidden rounded-md transition hover:-translate-y-1 sm:grid-cols-[150px_minmax(0,1fr)]">
+    <Link href={`/blog/${post.slug}`} className="card-surface group grid w-full min-w-0 overflow-hidden rounded-md sm:grid-cols-[150px_minmax(0,1fr)]">
       <EmptyVisual title={post.title} icon={subjectIcon(post.category)} />
       <div className="min-w-0 p-4">
         <Badge>{post.category}</Badge>
