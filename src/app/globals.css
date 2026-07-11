@@ -109,9 +109,10 @@ textarea {
 }
 
 .card-surface {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(11, 21, 32, 0.1);
-  box-shadow: 0 14px 38px rgba(11, 21, 32, 0.08);
+  background: white;
+  border: 1px solid rgba(11, 21, 32, 0.12);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .admin-grid {

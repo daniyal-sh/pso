@@ -31,7 +31,7 @@ export function GuidesBrowser({ guides }: { guides: Guide[] }) {
   return (
     <div>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto pb-1">
+        <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
           {subjects.map((item) => (
             <button
               key={item}
