@@ -11,6 +11,16 @@ export type IoiProblemResult = {
   score: number;
   submissions: number;
   lastSubmissionAt: string | null;
+  submissionHistory: IoiSubmission[];
+};
+
+export type IoiSubmission = {
+  id: string;
+  submittedAt: string;
+  elapsedSeconds: number;
+  score: number;
+  token: boolean;
+  subtasks: number[];
 };
 
 export type IoiParticipantResult = {

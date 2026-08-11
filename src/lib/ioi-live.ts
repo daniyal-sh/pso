@@ -34,7 +34,14 @@ type OfficialTask = {
 type OfficialTeam = { name: string };
 type OfficialUser = { f_name: string; l_name: string; team: string | null };
 type OfficialScores = Record<string, Record<string, number>>;
-type OfficialSubmission = { task: string; time: number; score: number };
+type OfficialSubmission = {
+  key: string;
+  task: string;
+  time: number;
+  score: number;
+  token: boolean;
+  extra?: string[];
+};
 
 async function getOfficialJson<T>(path: string): Promise<T> {
   const response = await fetch(`${OFFICIAL_RESULTS_URL}${path}`, {
@@ -76,8 +83,10 @@ function contestStatus(begin: number, end: number): IoiContestStatus {
   return "complete";
 }
 
-function submissionsForProblem(submissions: OfficialSubmission[], problemId: string): IoiProblemResult {
-  const matching = submissions.filter((submission) => submission.task === problemId);
+function submissionsForProblem(submissions: OfficialSubmission[], problemId: string, contestBegin: number): IoiProblemResult {
+  const matching = submissions
+    .filter((submission) => submission.task === problemId)
+    .sort((a, b) => a.time - b.time);
   const latest = matching.reduce<OfficialSubmission | null>(
     (current, submission) => (!current || submission.time > current.time ? submission : current),
     null,
@@ -88,6 +97,14 @@ function submissionsForProblem(submissions: OfficialSubmission[], problemId: str
     score: 0,
     submissions: matching.length,
     lastSubmissionAt: latest ? new Date(latest.time * 1000).toISOString() : null,
+    submissionHistory: matching.map((submission) => ({
+      id: submission.key,
+      submittedAt: new Date(submission.time * 1000).toISOString(),
+      elapsedSeconds: Math.max(0, submission.time - contestBegin),
+      score: submission.score,
+      token: submission.token,
+      subtasks: (submission.extra ?? []).map((score) => Number(score)),
+    })),
   };
 }
 
@@ -146,7 +163,7 @@ export async function getIoiLiveSnapshot(): Promise<IoiLiveSnapshot> {
       const user = users[id];
       const submissions = submissionMap.get(id) ?? [];
       const problemResults = problems.map((problem) => ({
-        ...submissionsForProblem(submissions, problem.id),
+        ...submissionsForProblem(submissions, problem.id, begin),
         score: scores[id]?.[problem.id] ?? 0,
       }));
 
