@@ -48,6 +48,23 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
         ]}
       />
 
+      {track.exam === "IOI" ? (
+        <section className="border-b border-gold/20 bg-[#fff5d8]">
+          <Container className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald text-white">
+                <Icon name="activity" className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald">IOI 2026 · Live now</p>
+                <p className="mt-1 text-sm font-bold text-charcoal">Follow Pakistan’s team scores and worldwide ranks.</p>
+              </div>
+            </div>
+            <ButtonLink href="/ioi/live" icon="chevron">Open live tracker</ButtonLink>
+          </Container>
+        </section>
+      ) : null}
+
       <section className="py-10">
         <Container className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
