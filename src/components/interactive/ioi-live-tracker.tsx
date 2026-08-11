@@ -97,9 +97,19 @@ export function IoiLiveTracker({ initialSnapshot }: { initialSnapshot: IoiLiveSn
                 </button>
               ))}
             </div>
-            <a href={snapshot.source} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-black text-emerald hover:underline">
-              Official IOI team results <Icon name="external-link" className="h-4 w-4" />
-            </a>
+            <div className="flex flex-col items-start gap-1.5 sm:items-end">
+              <a href={snapshot.source} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-black text-emerald hover:underline">
+                Official IOI team results <Icon name="external-link" className="h-4 w-4" />
+              </a>
+              <a
+                href="https://ioi-2026-country-board.chickenbiryani0609.chatgpt.site/?country=PAK&compare=IND"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-bold text-charcoal/60 transition hover:text-emerald hover:underline"
+              >
+                Pakistan vs India country board <Icon name="external-link" className="h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
 
           <div className="mt-5 grid overflow-hidden border border-navy/10 bg-white md:grid-cols-[1.2fr_0.8fr_0.8fr]">
