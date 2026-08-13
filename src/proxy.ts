@@ -15,7 +15,7 @@ const contentSecurityPolicy = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'self'",
-  "upgrade-insecure-requests",
+  ...(!isDev ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 function hasSupabaseSessionCookie(request: NextRequest) {
