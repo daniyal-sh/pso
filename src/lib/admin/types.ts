@@ -86,6 +86,7 @@ export type ActionState = {
   ok: boolean;
   message: string;
   email?: string;
+  id?: string;
   fieldErrors?: Record<string, string[] | undefined>;
 };
 

@@ -8,6 +8,11 @@ const initialState: ActionState = { ok: false, message: "" };
 const statuses: ContentStatus[] = ["draft", "in_review", "changes_requested", "scheduled", "published", "archived"];
 const resourceKinds = ["Book", "Guide", "Handout", "Problem Set", "Solution", "Syllabus", "Formula Sheet", "Other"];
 
+// Uploaded files are stored as "/resources/<path>" and served by the storage route.
+function publicResourceHref(localUrl: string) {
+  return localUrl.startsWith("/resources/") ? `/api/storage/resource-files/${localUrl.slice("/resources/".length)}` : localUrl;
+}
+
 function StatusField({ value = "published" }: { value?: ContentStatus }) {
   return (
     <label className="block">
@@ -93,20 +98,33 @@ export function ResourceEditor({ item, context }: { item?: ResourceAdminItem | n
     setUploading(true);
     setUploadMessage("Uploading file...");
 
-    const uploadData = new FormData();
-    uploadData.set("id", id);
-    uploadData.set("subject", subject);
-    uploadData.set("title", title);
-    uploadData.set("resourceFile", file);
-
     try {
       const response = await fetch("/api/admin/resources/upload", {
         method: "POST",
-        body: uploadData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, subject, title, fileName: file.name, fileType: file.type, fileSize: file.size }),
       });
-      const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; resourceId?: string; localUrl?: string; sizeBytes?: number } | null;
-      if (!response.ok || !result?.ok || !result.resourceId || !result.localUrl) {
+      const result = (await response.json().catch(() => null)) as
+        | { ok?: boolean; message?: string; resourceId?: string; signedUrl?: string; contentType?: string; localUrl?: string; sizeBytes?: number }
+        | null;
+      if (!response.ok || !result?.ok || !result.resourceId || !result.localUrl || !result.signedUrl) {
         throw new Error(result?.message || "Upload failed. Please try again.");
+      }
+
+      // Send the file straight to Supabase Storage using the one-time signed URL.
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const storageResponse = await fetch(result.signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": result.contentType || file.type || "application/octet-stream",
+          "x-upsert": "false",
+          ...(anonKey ? { apikey: anonKey } : {}),
+        },
+        body: file,
+      });
+      if (!storageResponse.ok) {
+        const detail = (await storageResponse.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(detail?.message ? `Upload failed: ${detail.message}` : "Upload failed. Please try again.");
       }
       if (idRef.current) idRef.current.value = result.resourceId;
       if (localUrlRef.current) localUrlRef.current.value = result.localUrl;
@@ -171,7 +189,7 @@ export function ResourceEditor({ item, context }: { item?: ResourceAdminItem | n
         </label>
         {uploadMessage ? <p className={uploadMessage.includes("failed") || uploadMessage.includes("allowed") ? "mt-3 text-sm font-bold text-red-200" : "mt-3 text-sm font-bold text-emerald"}>{uploadMessage}</p> : null}
         {item?.localUrl ? (
-          <a href={item.localUrl} target="_blank" className="mt-4 inline-flex font-black text-emerald">
+          <a href={publicResourceHref(item.localUrl)} target="_blank" rel="noreferrer" className="mt-4 inline-flex font-black text-emerald">
             Open attached file
           </a>
         ) : null}

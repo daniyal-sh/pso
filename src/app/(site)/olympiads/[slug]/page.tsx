@@ -5,7 +5,7 @@ import { Pathway } from "@/components/sections/cards";
 import { Badge, ButtonLink, Container, PageHero, SectionTitle } from "@/components/sections/common";
 import { pathwaySteps, tracks } from "@/lib/data";
 import { getPublishedGuides } from "@/lib/public-content";
-import { getDatabasePublishedPastPapers, getDatabasePublishedQuestions } from "@/lib/public-datasets";
+import { getPublishedPastPapers, getPublishedQuestions } from "@/lib/public-datasets";
 
 export function generateStaticParams() {
   return tracks.map((track) => ({ slug: track.slug }));
@@ -24,8 +24,8 @@ export default async function TrackDetailPage({ params }: { params: Promise<{ sl
   const track = tracks.find((item) => item.slug === slug);
   if (!track) notFound();
   const [questions, pastPapers, guides] = await Promise.all([
-    getDatabasePublishedQuestions(),
-    getDatabasePublishedPastPapers(),
+    getPublishedQuestions(),
+    getPublishedPastPapers(),
     getPublishedGuides(),
   ]);
   const subjectQuestions = questions.filter((question) => question.subject === track.name);

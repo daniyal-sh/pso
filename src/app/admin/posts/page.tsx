@@ -17,7 +17,7 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
     <AdminShell context={context} title="Blog Posts" description="Create, preview, review, schedule, and publish video-backed essays and announcements.">
       <div className="space-y-6">
         <ContentTable items={items} editBasePath="/admin/posts" context={context} />
-        <ContentEditor kind="blog_post" item={item} context={context} />
+        <ContentEditor key={item?.id ?? "new"} kind="blog_post" item={item} context={context} />
       </div>
     </AdminShell>
   );

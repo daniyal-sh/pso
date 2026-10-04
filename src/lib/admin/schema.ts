@@ -2,7 +2,12 @@ import { z } from "zod";
 import { adminMemberStatuses, adminSubjects, contentKinds, contentStatuses } from "@/lib/admin/types";
 
 const emptyStringToUndefined = (value: unknown) => (value === "" ? undefined : value);
-const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
+const httpUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine((value) => /^https?:\/\//i.test(value), "Links must start with http:// or https://.");
+const optionalUrl = z.preprocess(emptyStringToUndefined, httpUrl.optional());
 const optionalDate = z.preprocess(emptyStringToUndefined, z.string().datetime().optional());
 
 export function slugify(value: string) {
@@ -11,7 +16,7 @@ export function slugify(value: string) {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "");
+    .replace(/-{2,}/g, "-");
 }
 
 export function calculateReadTime(body: string) {
@@ -19,7 +24,7 @@ export function calculateReadTime(body: string) {
   return `${Math.max(1, Math.ceil(words / 220))} min`;
 }
 
-export function parseTags(value: string) {
+function parseTags(value: string) {
   return value
     .split(",")
     .map((tag) => tag.trim())

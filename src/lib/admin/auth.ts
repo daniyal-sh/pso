@@ -62,13 +62,13 @@ export function hasAdminAccess(context: AdminContext) {
   return Boolean(context.user && context.member && context.member.status === "active");
 }
 
-export function canManageBlog(context: AdminContext, item?: { createdBy?: string | null } | null) {
+function canManageBlog(context: AdminContext, item?: { createdBy?: string | null } | null) {
   if (isOwner(context)) return true;
   if (!context.permissions.blogs || !context.user) return false;
   return !item || item.createdBy === context.user.id;
 }
 
-export function canManageGuide(context: AdminContext, item?: { createdBy?: string | null } | null) {
+function canManageGuide(context: AdminContext, item?: { createdBy?: string | null } | null) {
   if (isOwner(context)) return true;
   if (!context.permissions.guides || !context.user) return false;
   return !item || item.createdBy === context.user.id;
@@ -85,10 +85,6 @@ export function canManageResourceSubject(context: AdminContext, subject: string 
   if (isOwner(context)) return true;
   const normalized = subject ? normalizeSubject(subject) : null;
   return Boolean(normalized && context.permissions.resourceSubjects.includes(normalized));
-}
-
-export function canPublishContent(context: AdminContext, kind: ContentKind, item?: { createdBy?: string | null } | null) {
-  return canManageContentKind(context, kind, item);
 }
 
 export function canDelete(context: AdminContext) {
@@ -119,14 +115,14 @@ export async function getAdminContext(): Promise<AdminContext> {
   const service = getSupabaseServiceClient();
   if (!service) return { ...base, user: { id: user.id, email: user.email } };
 
-  const byUser = await service
-    .from("admin_members")
-    .select("id,email,user_id,display_name,status,is_owner,last_login_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const byEmail = byUser.data
-    ? { data: null }
-    : await service.from("admin_members").select("id,email,user_id,display_name,status,is_owner,last_login_at").eq("email", user.email.toLowerCase()).maybeSingle();
+  const memberColumns = "id,email,user_id,display_name,status,is_owner,last_login_at";
+  const byUser = await service.from("admin_members").select(memberColumns).eq("user_id", user.id).maybeSingle();
+  // Email matching is only a first-login fallback: the address must be verified and the
+  // member row must not already belong to a different Auth user.
+  const byEmail =
+    byUser.data || !user.email_confirmed_at
+      ? { data: null }
+      : await service.from("admin_members").select(memberColumns).eq("email", user.email.toLowerCase()).is("user_id", null).maybeSingle();
   const member = byUser.data ?? byEmail.data;
 
   if (!member || member.status !== "active") {
@@ -192,4 +188,3 @@ export async function requireResourceAccess() {
   return context;
 }
 
-export const requireAdmin = requireAdminAccess;

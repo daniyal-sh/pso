@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import type { PastPaper, Question, ResourceItem } from "@/lib/content-data";
-import { getSupabaseConfig, getSupabaseServiceClient } from "@/lib/supabase/server";
+import { getSupabasePublicClient, selectAllRows } from "@/lib/supabase/server";
 
 type ResourceRow = {
   id: string;
@@ -129,56 +129,68 @@ function rowToQuestion(row: QuestionRow): Question {
 }
 
 async function queryPublishedResources() {
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
-  const { data, error } = await supabase
-    .from("resources")
-    .select("id,title,description,subject,kind,folder,year,pages,size_bytes,local_url,source_url")
-    .eq("status", "published")
-    .is("deleted_at", null)
-    .order("subject", { ascending: true })
-    .order("title", { ascending: true });
+  const supabase = getSupabasePublicClient();
+  if (!supabase) return [];
+  const { data, error } = await selectAllRows<ResourceRow>((from, to) =>
+    supabase
+      .from("resources")
+      .select("id,title,description,subject,kind,folder,year,pages,size_bytes,local_url,source_url")
+      .eq("status", "published")
+      .is("deleted_at", null)
+      .order("subject", { ascending: true })
+      .order("title", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     console.error("Published resources query failed", error);
     return [];
   }
-  return (data ?? []).map((row) => rowToResource(row as ResourceRow));
+  return (data ?? []).map(rowToResource);
 }
 
 async function queryPublishedPastPapers() {
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
-  const { data, error } = await supabase
-    .from("past_papers")
-    .select("id,title,exam,subject,year,pages,resource_url,source_url,scanned,page_images,question_count,mcq_count,descriptive_count,part_i_count,part_ii_count")
-    .eq("status", "published")
-    .order("year", { ascending: false })
-    .order("subject", { ascending: true });
+  const supabase = getSupabasePublicClient();
+  if (!supabase) return [];
+  const { data, error } = await selectAllRows<PastPaperRow>((from, to) =>
+    supabase
+      .from("past_papers")
+      .select("id,title,exam,subject,year,pages,resource_url,source_url,scanned,page_images,question_count,mcq_count,descriptive_count,part_i_count,part_ii_count")
+      .eq("status", "published")
+      .order("year", { ascending: false })
+      .order("subject", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     console.error("Published past papers query failed", error);
     return [];
   }
-  return (data ?? []).map((row) => rowToPastPaper(row as PastPaperRow));
+  return (data ?? []).map(rowToPastPaper);
 }
 
 async function queryPublishedQuestions() {
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
-  const { data, error } = await supabase
-    .from("questions")
-    .select("id,paper_id,paper_subject,number,display_number,subject,topic,difficulty,type,section,section_title,exam,year,source,prompt,options,answer,solution,page,figure")
-    .eq("status", "published")
-    .order("year", { ascending: true })
-    .order("paper_id", { ascending: true })
-    .order("number", { ascending: true });
+  const supabase = getSupabasePublicClient();
+  if (!supabase) return [];
+  const { data, error } = await selectAllRows<QuestionRow>((from, to) =>
+    supabase
+      .from("questions")
+      .select("id,paper_id,paper_subject,number,display_number,subject,topic,difficulty,type,section,section_title,exam,year,source,prompt,options,answer,solution,page,figure")
+      .eq("status", "published")
+      .order("year", { ascending: true })
+      .order("paper_id", { ascending: true })
+      .order("number", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     console.error("Published questions query failed", error);
     return [];
   }
-  return (data ?? []).map((row) => rowToQuestion(row as QuestionRow));
+  return (data ?? []).map(rowToQuestion);
 }
 
 const getCachedPublishedResources = unstable_cache(queryPublishedResources, ["published-resources"], {
@@ -197,24 +209,15 @@ const getCachedPublishedQuestions = unstable_cache(queryPublishedQuestions, ["pu
 });
 
 export async function getPublishedResources() {
-  const rows = await getCachedPublishedResources();
-  return rows ?? [];
+  return getCachedPublishedResources();
 }
 
 export async function getPublishedPastPapers() {
   return getCachedPublishedPastPapers();
 }
 
-export async function getDatabasePublishedPastPapers() {
-  return getPublishedPastPapers();
-}
-
 export async function getPublishedQuestions() {
   return getCachedPublishedQuestions();
-}
-
-export async function getDatabasePublishedQuestions() {
-  return getPublishedQuestions();
 }
 
 export async function getPublishedPaperById(id: string) {
@@ -222,18 +225,8 @@ export async function getPublishedPaperById(id: string) {
   return rows.find((paper) => paper.id === id) ?? null;
 }
 
-export async function getDatabasePublishedPaperById(id: string) {
-  const rows = await getDatabasePublishedPastPapers();
-  return rows.find((paper) => paper.id === id) ?? null;
-}
-
 export async function getPublishedQuestionsForPaper(id: string) {
   const rows = await getPublishedQuestions();
-  return rows.filter((question) => question.paperId === id);
-}
-
-export async function getDatabasePublishedQuestionsForPaper(id: string) {
-  const rows = await getDatabasePublishedQuestions();
   return rows.filter((question) => question.paperId === id);
 }
 
@@ -246,14 +239,5 @@ export function getQuestionStatsForRows(rows: Question[]) {
     papers: papers.size,
     mcqs: rows.filter((question) => question.type === "MCQ").length,
     long: rows.filter((question) => question.type === "Long").length,
-  };
-}
-
-export function getResourceStatsForRows(rows: ResourceItem[]) {
-  return {
-    total: rows.length,
-    local: rows.filter((resource) => resource.localUrl).length,
-    external: rows.filter((resource) => !resource.localUrl).length,
-    subjects: new Set(rows.map((resource) => resource.subject)).size,
   };
 }
