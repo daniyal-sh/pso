@@ -878,4 +878,3 @@ export const questionPdfMetadata = {
   "physics-2024-final-physics-2024-405c90b-part-iii-2": {"paperId":"physics-2024-final-physics-2024-405c90b","subject":"Physics","year":2024,"section":"Part III","type":"Long","number":2,"displayNumber":"Descriptive 2","cropPath":"questions/2024/physics/physics-2024-final-physics-2024-405c90b/physics-2024-final-physics-2024-405c90b-part-iii-2.pdf"},
 } as const;
 
-export type QuestionPdfId = keyof typeof questionPdfMetadata;

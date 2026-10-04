@@ -1,4 +1,4 @@
-export const olympiadSubjects = [
+const olympiadSubjects = [
   "Mathematics",
   "Physics",
   "Biology",
@@ -11,7 +11,7 @@ export const olympiadSubjects = [
 
 export const adminSubjects = [...olympiadSubjects].sort() as (typeof olympiadSubjects)[number][];
 
-export type OlympiadSubject = (typeof olympiadSubjects)[number];
+type OlympiadSubject = (typeof olympiadSubjects)[number];
 
 const subjectAliases: Record<string, OlympiadSubject> = {
   IOAA: "Astronomy",

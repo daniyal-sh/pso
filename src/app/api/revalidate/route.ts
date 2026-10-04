@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
@@ -8,9 +9,16 @@ const revalidateSchema = z.object({
   tag: z.string().optional().default("published-content"),
 });
 
+function secretMatches(candidate: string, expected: string | undefined) {
+  if (!expected) return false;
+  const a = Buffer.from(candidate);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export async function POST(request: NextRequest) {
   const payload = revalidateSchema.safeParse(await request.json().catch(() => ({})));
-  if (!payload.success || !process.env.CONTENT_REVALIDATION_SECRET || payload.data.secret !== process.env.CONTENT_REVALIDATION_SECRET) {
+  if (!payload.success || !secretMatches(payload.data.secret, process.env.CONTENT_REVALIDATION_SECRET)) {
     return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
   }
 

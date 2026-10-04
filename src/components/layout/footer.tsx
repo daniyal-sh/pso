@@ -62,11 +62,9 @@ export function Footer() {
       <div className="relative z-10 border-t border-white/10 px-4 py-5 text-xs text-white/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>Pakistan Olympiads. All rights reserved.</span>
-          <div className="flex gap-5">
-            <Link href="/about">Privacy Policy</Link>
-            <Link href="/about">Terms of Use</Link>
-            <Link href="/about">Contact Us</Link>
-          </div>
+          <Link href="/about" className="transition hover:text-gold">
+            About and contact
+          </Link>
         </div>
       </div>
     </footer>

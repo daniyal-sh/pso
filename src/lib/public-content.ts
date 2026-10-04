@@ -2,10 +2,10 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import type { Guide } from "@/lib/guides";
-import { getSupabaseConfig, getSupabaseServiceClient } from "@/lib/supabase/server";
+import { getSupabasePublicClient, selectAllRows } from "@/lib/supabase/server";
 import type { ContentKind, ContentStatus } from "@/lib/admin/types";
 
-export type PublicBlogPost = {
+type PublicBlogPost = {
   slug: string;
   title: string;
   category: string;
@@ -19,7 +19,7 @@ export type PublicBlogPost = {
   content: string;
 };
 
-export type PublicAlumniStory = {
+type PublicAlumniStory = {
   name: string;
   achievement: string;
   subject: string;
@@ -93,25 +93,33 @@ function rowToGuide(row: PublishedContentRow): Guide {
   };
 }
 
-async function queryPublishedRows(kind: ContentKind) {
-  const supabase = getSupabaseServiceClient();
-  if (!getSupabaseConfig().hasServiceRole || !supabase) return [];
+// Scheduled items carry their go-live time in published_at, so they appear once it passes.
+const liveStatuses: ContentStatus[] = ["published", "scheduled"];
 
-  const { data, error } = await supabase
-    .from("content_items")
-    .select("kind,status,slug,title,excerpt,body,category,author_name,read_time,source_url,video_url,video_id,video_title,featured,metadata,published_at,updated_at")
-    .eq("kind", kind)
-    .eq("status", "published")
-    .is("deleted_at", null)
-    .lte("published_at", new Date().toISOString())
-    .order("published_at", { ascending: false });
+async function queryPublishedRows(kind: ContentKind) {
+  const supabase = getSupabasePublicClient();
+  if (!supabase) return [];
+
+  const now = new Date().toISOString();
+  const { data, error } = await selectAllRows<PublishedContentRow>((from, to) =>
+    supabase
+      .from("content_items")
+      .select("kind,status,slug,title,excerpt,body,category,author_name,read_time,source_url,video_url,video_id,video_title,featured,metadata,published_at,updated_at")
+      .eq("kind", kind)
+      .in("status", liveStatuses)
+      .is("deleted_at", null)
+      .lte("published_at", now)
+      .order("published_at", { ascending: false })
+      .order("slug", { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     console.error("Published content query failed", error);
     return [];
   }
 
-  return (data ?? []) as PublishedContentRow[];
+  return data ?? [];
 }
 
 const getCachedPublishedRows = unstable_cache(queryPublishedRows, ["published-content"], {

@@ -30,7 +30,7 @@ export default async function AlumniPage() {
           <SectionTitle title="Alumni stories" copy="Voices from our incredible alumni." />
           <div className="grid gap-5 md:grid-cols-2">
             {alumniStories.map((story) => (
-              <AlumniCard key={story.name} story={story} />
+              <AlumniCard key={story.name} story={story} showLink={false} />
             ))}
           </div>
         </Container>

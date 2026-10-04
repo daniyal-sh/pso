@@ -5,7 +5,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { contentFormSchema, moderatorAccessSchema, otpRequestSchema, otpVerifySchema, resourceFormSchema, transitionSchema } from "@/lib/admin/schema";
 import type { ActionState } from "@/lib/admin/types";
-import { getAdminContext, requireAdminAccess, requireOwner } from "@/lib/admin/auth";
+import { requireAdminAccess, requireOwner } from "@/lib/admin/auth";
 import { ensureConfirmedAdminAuthUser } from "@/lib/admin/auth-users";
 import { deleteContentItem, deleteResourceItem, saveContentItem, saveModeratorAccess, saveResourceItem, transitionContentItem } from "@/lib/admin/content";
 import { createSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
@@ -41,7 +41,7 @@ export async function requestAdminOtpAction(_: ActionState, formData: FormData):
     await ensureConfirmedAdminAuthUser(service!, member);
   } catch (error) {
     console.error("Failed to prepare whitelisted admin Auth user", error);
-    return { ok: false, message: "The login code could not be sent. Please try again." };
+    return { ok: true, message: genericOtpMessage, email: parsed.data.email };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -60,10 +60,8 @@ export async function requestAdminOtpAction(_: ActionState, formData: FormData):
   });
 
   if (error) {
-    return {
-      ok: false,
-      message: error.message,
-    };
+    // Same response as for unknown emails, so the form never reveals who is whitelisted.
+    console.error("Admin OTP request failed", error);
   }
 
   return { ok: true, message: genericOtpMessage, email: parsed.data.email };
@@ -90,7 +88,7 @@ export async function verifyAdminOtpAction(_: ActionState, formData: FormData): 
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: "That code is invalid or has expired. Request a new code and try again.",
     };
   }
 
@@ -106,12 +104,17 @@ export async function verifyAdminOtpAction(_: ActionState, formData: FormData): 
     return { ok: false, message: "Admin access could not be verified." };
   }
 
-  await service.from("admin_members").update({ user_id: data.user.id, last_login_at: new Date().toISOString() }).eq("id", member.id);
+  const linked = await service.from("admin_members").update({ user_id: data.user.id, last_login_at: new Date().toISOString() }).eq("id", member.id);
+  if (linked.error) {
+    console.error("Failed to link admin member", linked.error);
+    await supabase.auth.signOut();
+    return { ok: false, message: "Admin access could not be verified." };
+  }
   await service.from("profiles").upsert({
-      id: data.user.id,
+    id: data.user.id,
     email: data.user.email,
     display_name: member.display_name || data.user.email,
-    });
+  });
 
   redirect("/admin/dashboard");
 }
@@ -152,7 +155,8 @@ export async function saveContentAction(_: ActionState, formData: FormData): Pro
     const id = await saveContentItem(parsed.data, context);
     return {
       ok: true,
-      message: `Saved content item ${id}.`,
+      message: "Saved.",
+      id,
     };
   } catch (error) {
     return {
@@ -163,7 +167,7 @@ export async function saveContentAction(_: ActionState, formData: FormData): Pro
 }
 
 export async function transitionContentAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const context = await getAdminContext();
+  const context = await requireAdminAccess();
   const parsed = transitionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return zodError(parsed.error);
 
@@ -179,12 +183,6 @@ export async function transitionContentAction(_: ActionState, formData: FormData
       message: error instanceof Error ? error.message : initialError,
     };
   }
-}
-
-export async function transitionContentFormAction(formData: FormData) {
-  const context = await getAdminContext();
-  const parsed = transitionSchema.parse(Object.fromEntries(formData));
-  await transitionContentItem(parsed.id, parsed.status, parsed.note, context);
 }
 
 export async function saveResourceAction(_: ActionState, formData: FormData): Promise<ActionState> {

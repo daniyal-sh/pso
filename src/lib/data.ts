@@ -147,48 +147,6 @@ export const pathwaySteps = [
   },
 ];
 
-export const guideCards = [
-  {
-    slug: "general-nstc-paper-format-and-strategy",
-    title: "NSTC Paper Format and Attempt Strategy",
-    category: "General",
-    description: "Understand common MCQs, subject MCQs, and descriptive sections.",
-    readTime: "12 min",
-    level: "Beginner",
-  },
-  {
-    slug: "guide-to-ipho-through-nstc",
-    title: "Guide to IPhO through NSTC",
-    category: "Physics",
-    description: "Use calculus mechanics notes, MCQs, and long problems in stages.",
-    readTime: "14 min",
-    level: "Intermediate",
-  },
-  {
-    slug: "ioaa-pakistan-guide",
-    title: "IOAA Pakistan Guide",
-    category: "Astronomy",
-    description: "A Pakistan-focused astronomy and astrophysics preparation path.",
-    readTime: "18 min",
-    level: "Advanced",
-  },
-];
-
-export const downloadableResources = [
-  "Physical Constants Sheet (2024)",
-  "Olympiad Math Formula Sheet",
-  "Periodic Table (Printable)",
-  "IPhO Experimental Data Booklet",
-  "Important Derivations (Physics)",
-];
-
-export const recommendedBooks = [
-  { title: "Problems in General Physics", author: "I. E. Irodov", tag: "Highly Recommended" },
-  { title: "Introduction to Mathematical Olympiad", author: "Titu Andreescu", tag: "Highly Recommended" },
-  { title: "Organic Chemistry", author: "Clayden, Greeves, Warren", tag: "Highly Recommended" },
-  { title: "Algorithms", author: "Sedgewick and Wayne", tag: "Highly Recommended" },
-];
-
 export const blogPosts = [
   {
     slug: "incentives-of-nstc-why-it-is-worth-taking-seriously",

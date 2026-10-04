@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { transitionContentFormAction } from "@/app/admin/actions";
 import { Icon } from "@/components/icon";
+import { TransitionForm } from "@/components/admin/transition-form";
 import type { AdminContext, ContentListItem, ContentStatus } from "@/lib/admin/types";
 
 const transitionOptions: ContentStatus[] = ["draft", "in_review", "changes_requested", "scheduled", "published", "archived"];
@@ -44,18 +44,7 @@ export function ContentTable({ items, editBasePath, context }: { items: ContentL
               </td>
               <td className="px-4 py-4">
                 {canTransition(item) ? (
-                  <form action={transitionContentFormAction} className="flex gap-2">
-                    <input type="hidden" name="id" value={item.id} />
-                    <input type="hidden" name="note" value="Changed from admin table." />
-                    <select name="status" defaultValue={item.status} className="rounded-md border border-white/10 bg-[#061117] px-2 py-2 text-xs font-bold text-white">
-                      {transitionOptions.map((status) => (
-                        <option key={status}>{status}</option>
-                      ))}
-                    </select>
-                    <button className="rounded-md bg-emerald px-3 py-2 text-xs font-black text-white" type="submit">
-                      Apply
-                    </button>
-                  </form>
+                  <TransitionForm id={item.id} status={item.status} options={transitionOptions.filter((status) => context.member?.isOwner || status !== "scheduled")} />
                 ) : (
                   <span className="text-xs font-bold text-white/45">No access</span>
                 )}

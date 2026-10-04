@@ -71,7 +71,7 @@ Admin:
 
 ## Supabase
 
-Run the migrations in `supabase/migrations` in filename order, then seed content with either:
+Apply the migrations in `supabase/migrations` with `supabase db push` (or once each, in filename order), then seed content with either:
 
 ```bash
 npm run db:seed
@@ -99,6 +99,7 @@ See `supabase/README.md` for the full production setup, owner whitelist SQL, Aut
 npm run dev
 npm run typecheck
 npm run lint
+npm run test
 npm run build
 npm run verify
 npm run db:seed
@@ -111,15 +112,19 @@ NSTC extraction and validation helpers live in `scripts/`, especially:
 - `scripts/audit_nstc_papers.py`
 - `scripts/validate_question_bank.py`
 
+Install their Python dependencies with `python -m pip install -r scripts/requirements.txt`.
+
+Database migrations are tested by `supabase/tests/run.sh` (see `supabase/README.md`).
+
 `scripts/ingest_resources.py` is legacy import tooling from the old local-resource phase. New resources should be uploaded through the admin dashboard into Supabase Storage.
 
 ## Handoff Checklist
 
 1. Clone the repo and run `npm install`.
 2. Copy `.env.example` to `.env.local` and fill Supabase/Vercel values.
-3. Run `npm run typecheck`, `npm run lint`, and `npm run build`.
-4. Confirm Supabase migrations are applied in order.
+3. Run `npm run verify` (typecheck, lint, tests, build, audit).
+4. Confirm Supabase migrations are applied (`supabase db push`).
 5. Confirm an owner row exists in `admin_members`.
-6. Confirm Supabase Auth email templates send an OTP token.
+6. Confirm Supabase Auth email templates send an OTP token, and that public sign-ups are disabled.
 7. Upload regenerated question PDFs from `output/pdf/nstc-question-crops/questions/` to `question-pdfs`.
 8. Deploy to Vercel after local verification passes.

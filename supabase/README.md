@@ -2,18 +2,36 @@
 
 This project uses Supabase for admin authentication, content tables, past-paper/question datasets, and public storage buckets.
 
-## Migration Order
+## Migrations
 
-Run every migration in `supabase/migrations` in filename order:
+Migrations live in `supabase/migrations` and must be applied once each, in filename order. Prefer the Supabase CLI, which records what has already run:
 
-1. `20260509190000_admin_content.sql`
-2. `20260529193000_question_pdf_storage.sql`
-3. `20260529203000_admin_member_permissions.sql`
-4. `20260529213000_prune_seeded_resources.sql`
+```bash
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
+If you apply SQL by hand (SQL editor), only run files newer than the last one applied. All migrations are written to be safe to re-run, and `supabase/tests/run.sh` checks that in CI, but the CLI avoids the question entirely.
+
+1. `20260509190000_admin_content.sql`: base content schema and the legacy `admin_roles` table.
+2. `20260529193000_question_pdf_storage.sql`: `question-pdfs` bucket.
+3. `20260529203000_admin_member_permissions.sql`: current `admin_members` / `moderator_permissions` access model.
+4. `20260529213000_prune_seeded_resources.sql`: now a no-op (it originally deleted legacy seeded resources).
 5. `20260529223000_clear_resource_metadata_fields.sql`
-6. Any later cleanup migration files
+6. `20260614103740_expand_resource_subject_permissions.sql`
+7. `20261004120000_transactional_admin_writes.sql`: transactional `admin_*` functions used by the app for every admin write, scheduled publishing in the public content policy, and removal of the legacy owner-bootstrap policy.
 
-The first migration creates the original content schema and legacy `admin_roles` compatibility table. The later permission migration creates the current `admin_members` and `moderator_permissions` access model. App logic should use `admin_members`, not `admin_roles`.
+App logic uses `admin_members`, not `admin_roles`.
+
+### Testing migrations locally
+
+With any Postgres 15+ server available:
+
+```bash
+PGHOST=localhost PGUSER=postgres supabase/tests/run.sh
+```
+
+The script applies every migration twice against a throwaway database (using stand-ins for the Supabase `auth`/`storage` schemas) and runs the behaviour checks in `supabase/tests/admin_functions.sql`.
 
 ## Required Buckets
 
@@ -24,7 +42,7 @@ These public buckets should exist after migrations:
 - `paper-assets`
 - `question-pdfs`
 
-Public reads are allowed. Writes should go through server actions using `SUPABASE_SERVICE_ROLE_KEY` after app-side authorization checks.
+Public reads are allowed. Writes go through server code using `SUPABASE_SERVICE_ROLE_KEY` after app-side authorization checks. Resource files are uploaded by the browser directly to `resource-files` using a one-time signed upload URL issued by `/api/admin/resources/upload`, so the bucket's own size and MIME limits apply.
 
 ## Auth Configuration
 
@@ -37,6 +55,8 @@ For passwordless admin login, the email template used for OTP login must include
 ```
 
 The admin UI accepts 6 to 8 digit numeric codes. If the email only contains a confirmation URL, update the Supabase email template so it sends the token as visible text too.
+
+**Disable public sign-ups** (Authentication -> Sign In / Providers -> "Allow new users to sign up" off). The app creates Auth users for whitelisted members itself, so open sign-up is never needed, and keeping it off means nobody can pre-register a whitelisted address.
 
 Before requesting an OTP, the app creates active whitelisted members in Supabase Auth as email-confirmed users. It then calls `signInWithOtp` with `shouldCreateUser: false`, so first login does not use the Confirm signup template or require a confirmation-link redirect.
 
@@ -151,4 +171,4 @@ SUPABASE_SERVICE_ROLE_KEY
 CONTENT_REVALIDATION_SECRET
 ```
 
-Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code.
+Public pages read published rows with the anon key, so row-level security decides what is visible. The service role key is only used for admin pages and admin writes. Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code.

@@ -289,22 +289,28 @@ alter table public.questions enable row level security;
 alter table public.workflow_events enable row level security;
 alter table public.audit_log enable row level security;
 
+drop policy if exists "Profiles are visible to self and admins" on public.profiles;
 create policy "Profiles are visible to self and admins" on public.profiles
   for select using (id = auth.uid() or public.is_admin(auth.uid()));
 
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile" on public.profiles
   for update using (id = auth.uid()) with check (id = auth.uid());
 
+drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile" on public.profiles
   for insert with check (id = auth.uid());
 
+drop policy if exists "Admin roles visible to self and owners" on public.admin_roles;
 create policy "Admin roles visible to self and owners" on public.admin_roles
   for select using (user_id = auth.uid() or public.has_admin_role(array['owner']::public.admin_role_name[]));
 
+drop policy if exists "Owners manage admin roles" on public.admin_roles;
 create policy "Owners manage admin roles" on public.admin_roles
   for all using (public.has_admin_role(array['owner']::public.admin_role_name[]))
   with check (public.has_admin_role(array['owner']::public.admin_role_name[]));
 
+drop policy if exists "Bootstrap first owner" on public.admin_roles;
 create policy "Bootstrap first owner" on public.admin_roles
   for insert with check (
     role = 'owner'
@@ -312,12 +318,15 @@ create policy "Bootstrap first owner" on public.admin_roles
     and not exists (select 1 from public.admin_roles)
   );
 
+drop policy if exists "Published content is public" on public.content_items;
 create policy "Published content is public" on public.content_items
   for select using (status = 'published' and published_at <= now());
 
+drop policy if exists "Admins can read all content" on public.content_items;
 create policy "Admins can read all content" on public.content_items
   for select using (public.is_admin(auth.uid()));
 
+drop policy if exists "Contributors can create drafts" on public.content_items;
 create policy "Contributors can create drafts" on public.content_items
   for insert with check (
     public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[])
@@ -325,6 +334,7 @@ create policy "Contributors can create drafts" on public.content_items
     and status in ('draft', 'in_review')
   );
 
+drop policy if exists "Editors can update content" on public.content_items;
 create policy "Editors can update content" on public.content_items
   for update using (
     public.has_admin_role(array['owner','editor']::public.admin_role_name[])
@@ -342,56 +352,75 @@ create policy "Editors can update content" on public.content_items
     )
   );
 
+drop policy if exists "Owners and editors delete content" on public.content_items;
 create policy "Owners and editors delete content" on public.content_items
   for delete using (public.has_admin_role(array['owner','editor']::public.admin_role_name[]));
 
+drop policy if exists "Admins read revisions" on public.content_revisions;
 create policy "Admins read revisions" on public.content_revisions
   for select using (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins create revisions" on public.content_revisions;
 create policy "Admins create revisions" on public.content_revisions
   for insert with check (public.has_admin_role(array['owner','editor','reviewer','contributor']::public.admin_role_name[]));
 
+drop policy if exists "Public tags are readable" on public.tags;
 create policy "Public tags are readable" on public.tags for select using (true);
+drop policy if exists "Admins manage tags" on public.tags;
 create policy "Admins manage tags" on public.tags
   for all using (public.has_admin_role(array['owner','editor']::public.admin_role_name[]))
   with check (public.has_admin_role(array['owner','editor']::public.admin_role_name[]));
 
+drop policy if exists "Public content tags are readable" on public.content_tags;
 create policy "Public content tags are readable" on public.content_tags for select using (true);
+drop policy if exists "Admins manage content tags" on public.content_tags;
 create policy "Admins manage content tags" on public.content_tags
   for all using (public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[]))
   with check (public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[]));
 
+drop policy if exists "Published resources are public" on public.resources;
 create policy "Published resources are public" on public.resources for select using (status = 'published');
+drop policy if exists "Published papers are public" on public.past_papers;
 create policy "Published papers are public" on public.past_papers for select using (status = 'published');
+drop policy if exists "Published questions are public" on public.questions;
 create policy "Published questions are public" on public.questions for select using (status = 'published');
 
+drop policy if exists "Admins manage resources" on public.resources;
 create policy "Admins manage resources" on public.resources
   for all using (public.has_admin_role(array['owner','editor']::public.admin_role_name[]))
   with check (public.has_admin_role(array['owner','editor']::public.admin_role_name[]));
 
+drop policy if exists "Admins manage papers" on public.past_papers;
 create policy "Admins manage papers" on public.past_papers
   for all using (public.has_admin_role(array['owner','editor']::public.admin_role_name[]))
   with check (public.has_admin_role(array['owner','editor']::public.admin_role_name[]));
 
+drop policy if exists "Admins manage questions" on public.questions;
 create policy "Admins manage questions" on public.questions
   for all using (public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[]))
   with check (public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[]));
 
+drop policy if exists "Admins read assets" on public.content_assets;
 create policy "Admins read assets" on public.content_assets
   for select using (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins create assets" on public.content_assets;
 create policy "Admins create assets" on public.content_assets
   for insert with check (public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[]));
 
+drop policy if exists "Admins read workflow events" on public.workflow_events;
 create policy "Admins read workflow events" on public.workflow_events
   for select using (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins create workflow events" on public.workflow_events;
 create policy "Admins create workflow events" on public.workflow_events
   for insert with check (public.has_admin_role(array['owner','editor','reviewer','contributor']::public.admin_role_name[]));
 
+drop policy if exists "Owners read audit log" on public.audit_log;
 create policy "Owners read audit log" on public.audit_log
   for select using (public.has_admin_role(array['owner']::public.admin_role_name[]));
 
+drop policy if exists "Admins create audit log" on public.audit_log;
 create policy "Admins create audit log" on public.audit_log
   for insert with check (public.is_admin(auth.uid()));
 
@@ -405,15 +434,18 @@ set public = excluded.public,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
 
+drop policy if exists "Public reads managed storage buckets" on storage.objects;
 create policy "Public reads managed storage buckets" on storage.objects
   for select using (bucket_id in ('content-assets', 'resource-files', 'paper-assets'));
 
+drop policy if exists "Admins upload managed storage objects" on storage.objects;
 create policy "Admins upload managed storage objects" on storage.objects
   for insert with check (
     public.has_admin_role(array['owner','editor','contributor']::public.admin_role_name[])
     and bucket_id in ('content-assets', 'resource-files', 'paper-assets')
   );
 
+drop policy if exists "Owners and editors update managed storage objects" on storage.objects;
 create policy "Owners and editors update managed storage objects" on storage.objects
   for update using (
     public.has_admin_role(array['owner','editor']::public.admin_role_name[])
@@ -423,6 +455,7 @@ create policy "Owners and editors update managed storage objects" on storage.obj
     and bucket_id in ('content-assets', 'resource-files', 'paper-assets')
   );
 
+drop policy if exists "Owners and editors delete managed storage objects" on storage.objects;
 create policy "Owners and editors delete managed storage objects" on storage.objects
   for delete using (
     public.has_admin_role(array['owner','editor']::public.admin_role_name[])

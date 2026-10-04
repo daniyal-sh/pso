@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { deleteContentAction, saveContentAction } from "@/app/admin/actions";
 import { Icon } from "@/components/icon";
 import { MarkdownRenderer } from "@/components/sections/markdown-renderer";
@@ -27,9 +28,32 @@ type EditorFields = {
   featured: boolean;
   status: ContentStatus;
   scheduledAt: string;
+  sourceUrl: string;
+  videoUrl: string;
+  videoId: string;
+  videoTitle: string;
+  coverImageUrl: string;
+  tags: string;
+  level: string;
 };
 
+// <input type="datetime-local"> works in local time without a zone; the server expects ISO.
+function isoToLocalInput(value: string | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function localInputToIso(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
 function editorDefaults(kind: ContentKind, item?: ContentEditorItem | null): EditorFields {
+  const metadata = item?.metadata ?? {};
   return {
     title: item?.title ?? "",
     slug: item?.slug ?? "",
@@ -40,7 +64,14 @@ function editorDefaults(kind: ContentKind, item?: ContentEditorItem | null): Edi
     readTime: item?.readTime ?? "",
     featured: item?.featured ?? false,
     status: item?.status ?? "draft",
-    scheduledAt: item?.scheduledAt ?? "",
+    scheduledAt: isoToLocalInput(item?.scheduledAt),
+    sourceUrl: item?.sourceUrl ?? "",
+    videoUrl: item?.videoUrl ?? "",
+    videoId: item?.videoId ?? "",
+    videoTitle: item?.videoTitle ?? "",
+    coverImageUrl: item?.coverImageUrl ?? "",
+    tags: Array.isArray(metadata.tags) ? metadata.tags.map(String).join(", ") : "",
+    level: typeof metadata.level === "string" ? metadata.level : "",
   };
 }
 
@@ -60,12 +91,31 @@ export function ContentEditor({ kind, item, context }: { kind: ContentKind; item
     }
   });
 
+  const router = useRouter();
+  const pathname = usePathname();
+
   useEffect(() => {
+    if (item) return;
     const id = window.setTimeout(() => {
-      window.localStorage.setItem(storageKey, JSON.stringify(fields));
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(fields));
+      } catch {
+        // Draft autosave is best-effort.
+      }
     }, 500);
     return () => window.clearTimeout(id);
-  }, [fields, storageKey]);
+  }, [fields, item, storageKey]);
+
+  useEffect(() => {
+    if (!state.ok || !state.id) return;
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // Ignore storage failures.
+    }
+    // A newly created item must be edited by id from now on, or the next save would create a duplicate.
+    if (!item) router.replace(`${pathname}?edit=${state.id}`);
+  }, [item, pathname, router, state, storageKey]);
 
   const checklist = useMemo(
     () => [
@@ -81,8 +131,10 @@ export function ContentEditor({ kind, item, context }: { kind: ContentKind; item
     setFields((previous) => ({
       ...previous,
       [key]: value,
-      slug: key === "title" && !item ? slugify(String(value)) : previous.slug,
-      readTime: key === "body" ? calculateReadTime(String(value)) : previous.readTime,
+      slug: key === "title" && !item ? slugify(String(value)) : key === "slug" ? String(value) : previous.slug,
+      readTime: key === "body" ? calculateReadTime(String(value)) : key === "readTime" ? String(value) : previous.readTime,
+      // Re-derive the YouTube id from a changed URL instead of keeping the old one.
+      videoId: key === "videoUrl" ? "" : key === "videoId" ? String(value) : previous.videoId,
     }));
   }
 
@@ -93,15 +145,8 @@ export function ContentEditor({ kind, item, context }: { kind: ContentKind; item
     <form action={action} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
       <input type="hidden" name="id" value={item?.id ?? ""} />
       <input type="hidden" name="kind" value={kind} />
-      <input type="hidden" name="sourceUrl" value="" />
-      <input type="hidden" name="videoUrl" value="" />
-      <input type="hidden" name="videoId" value="" />
-      <input type="hidden" name="videoTitle" value="" />
-      <input type="hidden" name="coverImageUrl" value="" />
-      <input type="hidden" name="featured" value="false" />
-      <input type="hidden" name="scheduledAt" value="" />
-      <input type="hidden" name="tags" value="" />
-      <input type="hidden" name="level" value="" />
+      <input type="hidden" name="featured" value={fields.featured ? "true" : "false"} />
+      <input type="hidden" name="scheduledAt" value={fields.status === "scheduled" ? localInputToIso(fields.scheduledAt) : ""} />
       <section className="space-y-4">
         <div className="rounded-md border border-white/10 bg-white/5 p-5">
           <div className="grid gap-4 lg:grid-cols-2">
@@ -134,6 +179,34 @@ export function ContentEditor({ kind, item, context }: { kind: ContentKind; item
               onChange={(event) => updateField("excerpt", event.target.value)}
             />
           </label>
+        </div>
+
+        <div className="rounded-md border border-white/10 bg-white/5 p-5">
+          <h2 className="text-sm font-black uppercase text-white">Details</h2>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {fields.status === "scheduled" ? (
+              <label className="block">
+                <span className="text-xs font-bold uppercase text-white/60">Publish at</span>
+                <input
+                  type="datetime-local"
+                  className="mt-2 w-full rounded-md border border-white/10 bg-[#061117] px-3 py-3 text-sm text-white outline-none focus:border-emerald"
+                  value={fields.scheduledAt}
+                  onChange={(event) => updateField("scheduledAt", event.target.value)}
+                />
+              </label>
+            ) : null}
+            <Field label="Source URL" name="sourceUrl" value={fields.sourceUrl} placeholder="https://" onChange={(value) => updateField("sourceUrl", value)} />
+            <Field label="Cover image URL" name="coverImageUrl" value={fields.coverImageUrl} placeholder="https://" onChange={(value) => updateField("coverImageUrl", value)} />
+            <Field label="YouTube URL" name="videoUrl" value={fields.videoUrl} placeholder="https://www.youtube.com/watch?v=" onChange={(value) => updateField("videoUrl", value)} />
+            <Field label="YouTube video ID" name="videoId" value={fields.videoId} placeholder="Derived from the URL" onChange={(value) => updateField("videoId", value)} />
+            <Field label="Video title" name="videoTitle" value={fields.videoTitle} onChange={(value) => updateField("videoTitle", value)} />
+            <Field label="Tags (comma separated)" name="tags" value={fields.tags} onChange={(value) => updateField("tags", value)} />
+            <Field label="Level" name="level" value={fields.level} suggestions={["Beginner", "Intermediate", "Advanced"]} onChange={(value) => updateField("level", value)} />
+            <label className="flex items-center gap-3 self-end rounded-md border border-white/10 bg-[#061117] px-3 py-3 text-sm font-bold text-white/80">
+              <input type="checkbox" checked={fields.featured} onChange={(event) => updateField("featured", event.target.checked)} />
+              Featured
+            </label>
+          </div>
         </div>
 
         <div className="grid min-h-[620px] gap-4 rounded-md border border-white/10 bg-white/5 p-5 lg:grid-cols-2">

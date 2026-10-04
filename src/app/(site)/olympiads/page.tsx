@@ -2,7 +2,7 @@ import { TrackCard } from "@/components/sections/cards";
 import { Container, PageHero, SectionTitle } from "@/components/sections/common";
 import { tracks } from "@/lib/data";
 import { getPublishedGuides } from "@/lib/public-content";
-import { getDatabasePublishedPastPapers, getDatabasePublishedQuestions } from "@/lib/public-datasets";
+import { getPublishedPastPapers, getPublishedQuestions } from "@/lib/public-datasets";
 
 export const metadata = {
   title: "Olympiad Tracks",
@@ -11,8 +11,8 @@ export const metadata = {
 export default async function OlympiadsPage() {
   const [guides, pastPapers, questions] = await Promise.all([
     getPublishedGuides(),
-    getDatabasePublishedPastPapers(),
-    getDatabasePublishedQuestions(),
+    getPublishedPastPapers(),
+    getPublishedQuestions(),
   ]);
   const trackStats = tracks.map((track) => {
     const trackGuides = guides.filter((guide) => guide.category === track.name || (guide.tags ?? []).includes(track.name)).length;

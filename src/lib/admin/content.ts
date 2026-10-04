@@ -60,11 +60,6 @@ type ContentMutation = {
   metadata: Record<string, unknown>;
 };
 
-type DatasetStatusRow = {
-  status: ContentStatus;
-  updated_at: string;
-};
-
 type ResourceMutation = Omit<ResourceAdminItem, "id" | "updatedAt" | "sizeBytes" | "createdBy"> & {
   id?: string;
   sizeBytes: number;
@@ -131,16 +126,12 @@ function assertManageResource(context: AdminContext, subject: string) {
   if (!canManageResourceSubject(context, subject)) throw new Error("You are not allowed to manage resources for this subject.");
 }
 
-function datasetTimestamp(row?: Partial<DatasetStatusRow>) {
-  return row?.updated_at ?? new Date().toISOString();
-}
-
 function slugSegment(value: string) {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "");
+    .replace(/-{2,}/g, "-");
 }
 
 function safeFilename(value: string) {
@@ -159,6 +150,25 @@ function resourceUploadContentType(file: File) {
   if (allowedResourceMimeTypes.has(file.type)) return file.type;
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
   return resourceExtensionMimeTypes[extension] ?? null;
+}
+
+function friendlyDatabaseError(error: { message?: string; code?: string }) {
+  if (error.code === "23505" && /content_items_kind_slug/.test(error.message ?? "")) return "Another item of this type already uses that slug.";
+  return error.message || "The database rejected this change.";
+}
+
+function isAllowedResourceUrl(value: string, subject: string, resourceId: string, previousUrl?: string | null) {
+  if (value === previousUrl) return true;
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const ownPrefix = `/resources/${slugSegment(subject)}/${resourceId}/`;
+  return value.startsWith(ownPrefix) && !value.includes("..");
 }
 
 export async function getAdminDashboardData(context?: AdminContext): Promise<AdminDashboardData> {
@@ -191,12 +201,26 @@ export async function getAdminDashboardData(context?: AdminContext): Promise<Adm
       ...(context.permissions.blogs ? ["blog_post"] : []),
       ...(context.permissions.guides ? ["guide"] : []),
     ];
-    contentQuery = allowedKinds.length > 0 ? contentQuery.eq("created_by", context.user?.id ?? "").in("kind", allowedKinds) : contentQuery.eq("id", "__no_access__");
+    contentQuery = allowedKinds.length > 0 ? contentQuery.eq("created_by", context.user?.id ?? "").in("kind", allowedKinds) : contentQuery.eq("id", "00000000-0000-0000-0000-000000000000");
   }
 
-  const [contentResult, resourcesResult, papersResult, questionsResult, adminsResult] = await Promise.all([
+  const scopedCount = (status?: ContentStatus[]) => {
+    let query = supabase.from("content_items").select("id", { count: "exact", head: true }).is("deleted_at", null);
+    if (status) query = query.in("status", status);
+    if (context && !isOwner(context)) {
+      const allowedKinds = [...(context.permissions.blogs ? ["blog_post"] : []), ...(context.permissions.guides ? ["guide"] : [])];
+      query = allowedKinds.length > 0 ? query.eq("created_by", context.user?.id ?? "").in("kind", allowedKinds) : query.eq("id", "00000000-0000-0000-0000-000000000000");
+    }
+    return query;
+  };
+
+  const [contentResult, totalResult, publishedResult, reviewResult, scheduledResult, resourcesResult, papersResult, questionsResult, adminsResult] = await Promise.all([
     contentQuery,
-    supabase.from("resources").select("id", { count: "exact", head: true }),
+    scopedCount(),
+    scopedCount(["published"]),
+    scopedCount(["in_review", "changes_requested"]),
+    scopedCount(["scheduled"]),
+    supabase.from("resources").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("past_papers").select("id", { count: "exact", head: true }),
     supabase.from("questions").select("id", { count: "exact", head: true }),
     supabase.from("admin_members").select("id", { count: "exact", head: true }),
@@ -206,10 +230,10 @@ export async function getAdminDashboardData(context?: AdminContext): Promise<Adm
   return {
     source: "supabase",
     metrics: {
-      totalContent: content.length,
-      publishedContent: content.filter((item) => item.status === "published").length,
-      reviewQueue: content.filter((item) => item.status === "in_review" || item.status === "changes_requested").length,
-      scheduledContent: content.filter((item) => item.status === "scheduled").length,
+      totalContent: totalResult.count ?? 0,
+      publishedContent: publishedResult.count ?? 0,
+      reviewQueue: reviewResult.count ?? 0,
+      scheduledContent: scheduledResult.count ?? 0,
       resources: resourcesResult.count ?? 0,
       pastPapers: papersResult.count ?? 0,
       questions: questionsResult.count ?? 0,
@@ -235,7 +259,7 @@ export async function getAdminContentList(kind?: ContentKind, context?: AdminCon
     if (kind === "blog_post" || kind === "guide") {
       query = query.eq("created_by", context.user?.id ?? "");
     } else {
-      query = query.eq("created_by", "__no_access__");
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
     }
   }
   const { data, error } = await query;
@@ -259,130 +283,81 @@ export async function getAdminContentItem(id?: string, kind: ContentKind = "blog
   return item;
 }
 
+function revalidateContent(kind: string, slugs: (string | null | undefined)[]) {
+  revalidateTag("published-content", "max");
+  revalidatePath("/");
+  revalidatePath("/blog");
+  revalidatePath("/guides");
+  revalidatePath("/alumni");
+  for (const slug of new Set(slugs.filter(Boolean))) {
+    if (kind === "blog_post") revalidatePath(`/blog/${slug}`);
+    if (kind === "guide") revalidatePath(`/guides/${slug}`);
+  }
+}
+
 export async function saveContentItem(input: ContentMutation, context: AdminContext) {
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
 
   const previous = input.id
-    ? await supabase.from("content_items").select("status,kind,created_by").eq("id", input.id).is("deleted_at", null).maybeSingle()
+    ? await supabase.from("content_items").select("kind,created_by").eq("id", input.id).is("deleted_at", null).maybeSingle()
     : { data: null };
   if (input.id && !previous.data) throw new Error("Content item was not found.");
+  if (previous.data && previous.data.kind !== input.kind) throw new Error("Content type cannot be changed after creation.");
 
   assertManageContent(context, input.kind, previous.data ? { createdBy: previous.data.created_by } : null);
+  if (input.status === "scheduled" && !isOwner(context)) throw new Error("Only owners can schedule content.");
 
-  const publishedAt = input.status === "published" ? new Date().toISOString() : null;
-  const row = {
-    id: input.id || undefined,
-    kind: input.kind,
-    status: input.status,
-    slug: input.slug,
-    title: input.title,
-    excerpt: input.excerpt,
-    body: input.body,
-    category: input.category,
-    author_name: input.authorName,
-    read_time: input.readTime,
-    source_url: input.sourceUrl ?? "",
-    video_url: input.videoUrl ?? "",
-    video_id: input.videoId ?? "",
-    video_title: input.videoTitle ?? "",
-    cover_image_url: input.coverImageUrl ?? "",
-    featured: input.featured ?? false,
-    metadata: input.metadata,
-    scheduled_at: input.status === "scheduled" ? input.scheduledAt ?? null : null,
-    published_at: publishedAt,
-    created_by: input.id ? undefined : context.user?.id,
-    updated_by: context.user?.id,
-  };
-
-  const { data, error } = await supabase.from("content_items").upsert(row, { onConflict: "id" }).select("id,status,title,kind,slug").single();
-  if (error) throw error;
-
-  const revisionRows = await supabase.from("content_revisions").select("revision_number").eq("content_id", data.id).order("revision_number", { ascending: false }).limit(1);
-  const revisionNumber = ((revisionRows.data ?? [])[0]?.revision_number ?? 0) + 1;
-
-  await supabase.from("content_revisions").insert({
-    content_id: data.id,
-    revision_number: revisionNumber,
-    title: input.title,
-    excerpt: input.excerpt,
-    body: input.body,
-    metadata: input.metadata,
-    status: input.status,
-    created_by: context.user?.id,
+  const { data, error } = await supabase.rpc("admin_save_content", {
+    p_actor: context.user?.id ?? null,
+    p_item: {
+      id: input.id ?? null,
+      kind: input.kind,
+      status: input.status,
+      slug: input.slug,
+      title: input.title,
+      excerpt: input.excerpt,
+      body: input.body,
+      category: input.category,
+      author_name: input.authorName,
+      read_time: input.readTime,
+      source_url: input.sourceUrl ?? "",
+      video_url: input.videoUrl ?? "",
+      video_id: input.videoId ?? "",
+      video_title: input.videoTitle ?? "",
+      cover_image_url: input.coverImageUrl ?? "",
+      featured: input.featured ?? false,
+      metadata: input.metadata,
+      scheduled_at: input.status === "scheduled" ? (input.scheduledAt ?? null) : null,
+    },
   });
+  if (error) throw new Error(friendlyDatabaseError(error));
 
-  const fromStatus = (previous.data?.status as ContentStatus | undefined) ?? null;
-  if (fromStatus !== input.status) {
-    await supabase.from("workflow_events").insert({
-      content_id: data.id,
-      from_status: fromStatus,
-      to_status: input.status,
-      note: input.id ? "Status updated from admin editor." : "Content created from admin editor.",
-      actor_id: context.user?.id,
-    });
-  }
-
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: input.id ? "content.update" : "content.create",
-    entity_table: "content_items",
-    entity_id: data.id,
-    summary: `${data.kind} ${data.slug} saved as ${data.status}.`,
-    metadata: { title: data.title },
-  });
-
-  revalidateTag("published-content", "max");
-  revalidatePath("/blog");
-  revalidatePath("/guides");
-  if (input.kind === "blog_post") revalidatePath(`/blog/${input.slug}`);
-  if (input.kind === "guide") revalidatePath(`/guides/${input.slug}`);
-
-  return data.id as string;
+  const saved = data as { id: string; kind: string; slug: string; previous_slug: string | null };
+  revalidateContent(saved.kind, [saved.slug, saved.previous_slug]);
+  return saved.id;
 }
 
 export async function transitionContentItem(id: string, status: ContentStatus, note: string, context: AdminContext) {
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
 
-  const previous = await supabase.from("content_items").select("status,slug,kind,title,created_by").eq("id", id).is("deleted_at", null).single();
-  if (previous.error) throw previous.error;
+  const previous = await supabase.from("content_items").select("kind,created_by").eq("id", id).is("deleted_at", null).maybeSingle();
+  if (previous.error) throw new Error(friendlyDatabaseError(previous.error));
+  if (!previous.data) throw new Error("Content item was not found.");
   assertManageContent(context, previous.data.kind as ContentKind, { createdBy: previous.data.created_by });
+  if (status === "scheduled" && !isOwner(context)) throw new Error("Only owners can schedule content.");
 
-  const { data, error } = await supabase
-    .from("content_items")
-    .update({
-      status,
-      published_at: status === "published" ? new Date().toISOString() : null,
-      updated_by: context.user?.id,
-    })
-    .eq("id", id)
-    .select("id,kind,slug,title")
-    .single();
-  if (error) throw error;
-
-  await supabase.from("workflow_events").insert({
-    content_id: id,
-    from_status: previous.data.status,
-    to_status: status,
-    note,
-    actor_id: context.user?.id,
+  const { data, error } = await supabase.rpc("admin_transition_content", {
+    p_id: id,
+    p_status: status,
+    p_note: note,
+    p_actor: context.user?.id ?? null,
   });
+  if (error) throw new Error(friendlyDatabaseError(error));
 
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "content.transition",
-    entity_table: "content_items",
-    entity_id: id,
-    summary: `${data.kind} ${data.slug} moved to ${status}.`,
-    metadata: { title: data.title, note },
-  });
-
-  revalidateTag("published-content", "max");
-  revalidatePath("/blog");
-  revalidatePath("/guides");
-  if (data.kind === "blog_post") revalidatePath(`/blog/${data.slug}`);
-  if (data.kind === "guide") revalidatePath(`/guides/${data.slug}`);
+  const saved = data as { kind: string; slug: string };
+  revalidateContent(saved.kind, [saved.slug]);
 }
 
 export async function getAdminResources(context?: AdminContext) {
@@ -449,7 +424,7 @@ export async function getAdminResourceItem(id?: string, context?: AdminContext) 
   } satisfies ResourceAdminItem;
 }
 
-export async function uploadResourceFileToStorage(subject: string, resourceId: string, fileValue: FormDataEntryValue | null | undefined) {
+async function uploadResourceFileToStorage(subject: string, resourceId: string, fileValue: FormDataEntryValue | null | undefined) {
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
   if (!isUploadFile(fileValue)) throw new Error("Choose a PDF, PNG, JPEG, or WEBP file to upload.");
@@ -469,13 +444,36 @@ export async function uploadResourceFileToStorage(subject: string, resourceId: s
   };
 }
 
+/**
+ * Creates a one-time signed upload URL so the browser can send the file straight to
+ * Supabase Storage. This avoids the serverless request body limit (4.5 MB on Vercel).
+ */
+export async function createResourceUploadUrl(subject: string, resourceId: string, file: { name: string; type: string; size: number }) {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) throw new Error("Supabase service role is not configured.");
+  const contentType = allowedResourceMimeTypes.has(file.type) ? file.type : (resourceExtensionMimeTypes[file.name.split(".").pop()?.toLowerCase() ?? ""] ?? null);
+  if (!contentType) throw new Error("Upload must be a PDF, PNG, JPEG, or WEBP file.");
+  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error("Choose a file to upload.");
+  if (file.size > maxResourceUploadBytes) throw new Error("Upload must be 50 MB or smaller.");
+
+  const objectPath = `${slugSegment(subject)}/${resourceId}/${Date.now()}-${safeFilename(file.name)}`;
+  const { data, error } = await supabase.storage.from("resource-files").createSignedUploadUrl(objectPath);
+  if (error) throw error;
+  return {
+    signedUrl: data.signedUrl,
+    contentType,
+    localUrl: `/resources/${objectPath}`,
+    sizeBytes: file.size,
+  };
+}
+
 export async function saveResourceItem(input: ResourceMutation, context: AdminContext, fileValue?: FormDataEntryValue | null) {
   assertManageResource(context, input.subject);
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
   const resourceId = input.id?.trim() || `${slugSegment(input.subject)}-${slugSegment(input.title)}`;
   if (!resourceId) throw new Error("Resource needs a title before it can be saved.");
-  const previous = await supabase.from("resources").select("subject,local_url").eq("id", resourceId).is("deleted_at", null).maybeSingle();
+  const previous = await supabase.from("resources").select("subject,local_url,deleted_at").eq("id", resourceId).maybeSingle();
   if (previous.data) assertManageResource(context, previous.data.subject);
 
   let localUrl = input.localUrl || previous.data?.local_url || null;
@@ -485,41 +483,32 @@ export async function saveResourceItem(input: ResourceMutation, context: AdminCo
     localUrl = upload.localUrl;
     sizeBytes = upload.sizeBytes;
   }
+  if (localUrl && !isAllowedResourceUrl(localUrl, input.subject, resourceId, previous.data?.local_url)) {
+    throw new Error("Resource link must be an http(s) URL or a file uploaded for this resource.");
+  }
 
-  const { data, error } = await supabase
-    .from("resources")
-    .upsert(
-      {
-        id: resourceId,
-        status: input.status,
-        title: input.title,
-        description: input.description,
-        subject: input.subject,
-        kind: input.kind,
-        folder: input.folder,
-        year: input.year,
-        pages: input.pages,
-        size_bytes: sizeBytes,
-        local_url: localUrl,
-        source_url: "",
-        created_by: previous.data ? undefined : context.user?.id,
-        updated_by: context.user?.id,
-      },
-      { onConflict: "id" },
-    )
-    .select("id,status,updated_at")
-    .single();
-  if (error) throw error;
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "resource.upsert",
-    entity_table: "resources",
-    entity_id: resourceId,
-    summary: `${input.title} saved as ${data.status}.`,
+  const { data, error } = await supabase.rpc("admin_save_resource", {
+    p_actor: context.user?.id ?? null,
+    p_item: {
+      id: resourceId,
+      status: input.status,
+      title: input.title,
+      description: input.description,
+      subject: input.subject,
+      kind: input.kind,
+      folder: input.folder,
+      year: input.year,
+      pages: input.pages,
+      size_bytes: sizeBytes,
+      local_url: localUrl,
+    },
   });
+  if (error) throw new Error(friendlyDatabaseError(error));
+
+  const saved = data as { id: string; updated_at: string };
   revalidateTag("published-resources", "max");
   revalidatePath("/resources");
-  return { id: data.id as string, updatedAt: datasetTimestamp(data) };
+  return { id: saved.id, updatedAt: saved.updated_at };
 }
 
 export async function getAdminModerators() {
@@ -553,90 +542,58 @@ export async function saveModeratorAccess(
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
 
-  if (input.memberId && context.member?.id === input.memberId && (!input.isOwner || input.status === "disabled")) {
-    throw new Error("You cannot remove or disable your own owner access.");
+  if (input.memberId && context.member?.id === input.memberId && (!input.isOwner || input.status === "disabled" || input.email !== context.member.email.toLowerCase())) {
+    throw new Error("You cannot remove, disable, or change the email of your own owner access.");
   }
 
-  const memberPayload = {
-    email: input.email,
-    display_name: input.displayName,
-    status: input.status,
-    is_owner: input.isOwner,
-    invited_by: context.user?.id,
-  };
-  const mutation = input.memberId
-    ? supabase.from("admin_members").update(memberPayload).eq("id", input.memberId)
-    : supabase.from("admin_members").upsert(memberPayload, { onConflict: "email" });
-  const { data, error } = await mutation.select("id,email,is_owner").single();
-  if (error) throw error;
+  const permissions = [
+    ...(input.canBlog ? [{ permission: "blog" }] : []),
+    ...(input.canGuide ? [{ permission: "guide" }] : []),
+    ...input.resourceSubjects.map((subject) => ({ permission: "resources_subject", subject })),
+  ];
 
-  if (!data.is_owner) {
-    await supabase.from("moderator_permissions").delete().eq("member_id", data.id);
-    const rows = [
-      ...(input.canBlog ? [{ member_id: data.id, permission: "blog", subject: null }] : []),
-      ...(input.canGuide ? [{ member_id: data.id, permission: "guide", subject: null }] : []),
-      ...input.resourceSubjects.map((subject) => ({ member_id: data.id, permission: "resources_subject", subject })),
-    ];
-    if (rows.length > 0) {
-      const insert = await supabase.from("moderator_permissions").insert(rows);
-      if (insert.error) throw insert.error;
-    }
-  } else {
-    await supabase.from("moderator_permissions").delete().eq("member_id", data.id);
-  }
-
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "admin_member.upsert",
-    entity_table: "admin_members",
-    entity_id: data.id,
-    summary: `Admin access updated for ${data.email}.`,
+  const { data, error } = await supabase.rpc("admin_save_member_access", {
+    p_member_id: input.memberId ?? null,
+    p_email: input.email,
+    p_display_name: input.displayName,
+    p_status: input.status,
+    p_is_owner: input.isOwner,
+    p_permissions: permissions,
+    p_actor: context.user?.id ?? null,
   });
+  if (error) throw new Error(friendlyDatabaseError(error));
+
   revalidatePath("/admin/contributors");
-  return data.id as string;
+  return (data as { id: string }).id;
 }
 
 export async function deleteContentItem(id: string, context: AdminContext) {
   if (!canDelete(context)) throw new Error("Only the owner can delete content.");
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
-  const previous = await supabase.from("content_items").select("id,kind,slug,title").eq("id", id).maybeSingle();
-  if (previous.error) throw previous.error;
-  if (!previous.data) throw new Error("Content item was not found.");
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "content.delete",
-    entity_table: "content_items",
-    entity_id: id,
-    summary: `${previous.data.kind} ${previous.data.slug} deleted.`,
-    metadata: { title: previous.data.title },
-  });
-  const deleted = await supabase.from("content_items").delete().eq("id", id);
-  if (deleted.error) throw deleted.error;
-  revalidateTag("published-content", "max");
-  revalidatePath("/blog");
-  revalidatePath("/guides");
+  const { data, error } = await supabase.rpc("admin_delete_content", { p_id: id, p_actor: context.user?.id ?? null });
+  if (error) throw new Error(friendlyDatabaseError(error));
+  const deleted = data as { kind: string; slug: string };
+  revalidateContent(deleted.kind, [deleted.slug]);
 }
 
 export async function deleteResourceItem(id: string, context: AdminContext) {
   if (!canDelete(context)) throw new Error("Only the owner can delete resources.");
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
-  const previous = await supabase.from("resources").select("id,title,local_url").eq("id", id).maybeSingle();
-  if (previous.error) throw previous.error;
-  if (!previous.data) throw new Error("Resource was not found.");
-  await supabase.from("audit_log").insert({
-    actor_id: context.user?.id,
-    action: "resource.delete",
-    entity_table: "resources",
-    entity_id: id,
-    summary: `${previous.data.title} deleted.`,
-  });
-  if (previous.data.local_url?.startsWith("/resources/")) {
-    await supabase.storage.from("resource-files").remove([previous.data.local_url.slice("/resources/".length)]);
+  const { data, error } = await supabase.rpc("admin_delete_resource", { p_id: id, p_actor: context.user?.id ?? null });
+  if (error) throw new Error(friendlyDatabaseError(error));
+
+  const localUrl = (data as { local_url: string | null }).local_url;
+  const objectPath = localUrl?.startsWith("/resources/") ? localUrl.slice("/resources/".length) : null;
+  // Only remove the file when no other resource still points at it.
+  if (objectPath) {
+    const { count } = await supabase.from("resources").select("id", { count: "exact", head: true }).eq("local_url", localUrl);
+    if (!count) {
+      const removed = await supabase.storage.from("resource-files").remove([objectPath]);
+      if (removed.error) console.error("Failed to remove resource file", removed.error);
+    }
   }
-  const deleted = await supabase.from("resources").delete().eq("id", id);
-  if (deleted.error) throw deleted.error;
   revalidateTag("published-resources", "max");
   revalidatePath("/resources");
 }

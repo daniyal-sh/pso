@@ -52,7 +52,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 </div>
                 <a
                   className="mt-4 inline-flex font-bold text-emerald underline-offset-4 hover:underline"
-                  href={post.videoUrl}
+                  href={post.videoUrl || `https://www.youtube.com/watch?v=${post.videoId}`}
                   target="_blank"
                   rel="noreferrer"
                 >

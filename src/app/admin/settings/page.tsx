@@ -14,7 +14,6 @@ export default async function AdminSettingsPage() {
     ["Anon key", Boolean(config.anonKey)],
     ["Service role key", Boolean(config.serviceRoleKey)],
     ["Revalidation secret", Boolean(process.env.CONTENT_REVALIDATION_SECRET)],
-    ["Email OTP template", true],
   ];
 
   return (
@@ -28,7 +27,10 @@ export default async function AdminSettingsPage() {
         ))}
       </div>
       <div className="mt-6 rounded-md border border-white/10 bg-white/5 p-5 text-sm leading-7 text-white/70">
-        <p>Deploy checklist: create Supabase project, run migration SQL, configure Auth redirect URLs, add Vercel env vars, run `npm run db:seed`, and verify `npm run verify` before making admin public.</p>
+        <p>
+          The OTP email template cannot be checked from here: confirm in Supabase Auth that the magic link template includes {"{{ .Token }}"}, and that public sign-ups are disabled.
+        </p>
+        <p className="mt-3">Deploy checklist: create Supabase project, run migration SQL, configure Auth redirect URLs, add Vercel env vars, run `npm run db:seed`, and verify `npm run verify` before making admin public.</p>
       </div>
     </AdminShell>
   );

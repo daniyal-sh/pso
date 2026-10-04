@@ -1,12 +1,10 @@
 export { adminSubjects } from "@/lib/subjects";
 import { adminSubjects } from "@/lib/subjects";
-export const moderatorPermissionKinds = ["resources_subject", "blog", "guide"] as const;
 export const adminMemberStatuses = ["active", "disabled"] as const;
 export const contentKinds = ["blog_post", "guide", "alumni_story", "resource", "past_paper", "question", "solution"] as const;
 export const contentStatuses = ["draft", "in_review", "changes_requested", "scheduled", "published", "archived"] as const;
 
 export type AdminSubject = (typeof adminSubjects)[number];
-export type ModeratorPermissionKind = (typeof moderatorPermissionKinds)[number];
 export type AdminMemberStatus = (typeof adminMemberStatuses)[number];
 export type ContentKind = (typeof contentKinds)[number];
 export type ContentStatus = (typeof contentStatuses)[number];
@@ -86,6 +84,7 @@ export type ActionState = {
   ok: boolean;
   message: string;
   email?: string;
+  id?: string;
   fieldErrors?: Record<string, string[] | undefined>;
 };
 

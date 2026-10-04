@@ -73,33 +73,6 @@ export function Pathway({ steps }: { steps: { title: string; copy: string; icon:
   );
 }
 
-const resourceTone = {
-  dark: "dark-panel text-white",
-  mint: "bg-mint text-charcoal",
-  cool: "bg-[#f2f5f8] text-charcoal",
-  gold: "bg-[#fff5d8] text-charcoal",
-  teal: "bg-[#e6f6f4] text-charcoal",
-};
-
-export function ResourceCard({
-  resource,
-}: {
-  resource: { title: string; category: string; description: string; href: string; icon: string; tone: keyof typeof resourceTone };
-}) {
-  const dark = resource.tone === "dark";
-  return (
-    <Link href={resource.href} className={cn("group w-full min-w-0 overflow-hidden  border border-navy/10 p-5", resourceTone[resource.tone])}>
-      <Badge className={cn("mb-5", dark && "border-gold/20 bg-gold/20 text-gold")}>{resource.category}</Badge>
-      <Icon name={resource.icon} className={cn("h-8 w-8", dark ? "text-gold" : "text-emerald")} />
-      <h3 className={cn("mt-4 break-words text-lg font-black", dark ? "text-white" : "text-charcoal")}>{resource.title}</h3>
-      <p className={cn("mt-2 min-h-0 text-sm leading-6 break-words", dark ? "text-white/75" : "text-charcoal/70", "sm:min-h-16")}>{resource.description}</p>
-      <div className={cn("mt-5 flex justify-end", dark ? "text-gold" : "text-emerald")}>
-        <Icon name="chevron" className="h-5 w-5 transition group-hover:translate-x-1" />
-      </div>
-    </Link>
-  );
-}
-
 const guideVisuals: Record<string, { icon: string; label: string; accent: string }> = {
   General: { icon: "book-open", label: "Roadmap", accent: "from-emerald/20 to-gold/20" },
   Physics: { icon: "atom", label: "Mechanics", accent: "from-sky-200 to-mint" },
@@ -177,8 +150,10 @@ export function BlogCard({
 
 export function AlumniCard({
   story,
+  showLink = true,
 }: {
   story: { name: string; achievement: string; subject: string; location: string; quote: string; role: string };
+  showLink?: boolean;
 }) {
   return (
     <article className="card-surface w-full min-w-0 overflow-hidden p-5">
@@ -200,15 +175,19 @@ export function AlumniCard({
           <Icon name="medal" className="h-4 w-4 text-emerald" />
           {story.role}
         </p>
-        <p className="flex items-center gap-2 break-words">
-          <Icon name="flag" className="h-4 w-4 text-emerald" />
-          {story.location}
-        </p>
+        {story.location ? (
+          <p className="flex items-center gap-2 break-words">
+            <Icon name="flag" className="h-4 w-4 text-emerald" />
+            {story.location}
+          </p>
+        ) : null}
       </div>
       <p className="mt-4 break-words text-sm font-medium leading-6 text-charcoal">{`"${story.quote}"`}</p>
-      <Link href="/alumni" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald">
-        Read more <Icon name="chevron" className="h-4 w-4" />
-      </Link>
+      {showLink ? (
+        <Link href="/alumni" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-emerald">
+          More alumni stories <Icon name="chevron" className="h-4 w-4" />
+        </Link>
+      ) : null}
     </article>
   );
 }

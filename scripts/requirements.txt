@@ -1,0 +1,6 @@
+# Python dependencies for the NSTC extraction, audit and import scripts in this folder.
+# Install with: python -m pip install -r scripts/requirements.txt
+PyMuPDF>=1.24        # import fitz: PDF rendering and question crops
+pypdf>=4.0           # PDF text extraction
+Pillow>=10.0         # image processing
+rapidocr-onnxruntime>=1.3  # OCR fallback for scanned papers

@@ -5,8 +5,7 @@ import { Icon } from "@/components/icon";
 import { PdfViewer } from "@/components/interactive/pdf-viewer";
 import { QuestionImage } from "@/components/interactive/question-image";
 import { Badge } from "@/components/sections/common";
-import type { Question } from "@/lib/content-data";
-import { questionPdfMetadata } from "@/lib/question-pdf-paths";
+import type { QuestionBankItem } from "@/lib/content-data";
 import { cn } from "@/lib/utils";
 import { sortSubjects, subjectIcon } from "@/lib/subjects";
 
@@ -30,10 +29,6 @@ const modes: { label: PracticeMode; section: string; icon: string; hint: string 
 ];
 
 const QUESTION_BANK_STORAGE_KEY = "pso:question-bank-progress:v1";
-type QuestionPdfMetadata = (typeof questionPdfMetadata)[keyof typeof questionPdfMetadata];
-type QuestionWithPdf = Question & {
-  pdf: QuestionPdfMetadata;
-};
 
 
 function hashQuestion(id: string, salt: number) {
@@ -45,7 +40,7 @@ function hashQuestion(id: string, salt: number) {
   return hash >>> 0;
 }
 
-function optionTone(question: Question, index: number, selectedAnswer: number | null) {
+function optionTone(question: QuestionBankItem, index: number, selectedAnswer: number | null) {
   if (selectedAnswer !== index) return "border-navy/10 bg-white text-charcoal hover:border-emerald/35";
   if (question.answer === null) return "border-emerald bg-mint text-emerald";
   return question.answer === index ? "border-emerald bg-mint text-emerald" : "border-red-300 bg-red-50 text-red-700";
@@ -117,24 +112,13 @@ function formatSavedAt(value: string | null) {
   }).format(new Date(value));
 }
 
-function getQuestionPdfMetadata(question: Question) {
-  return questionPdfMetadata[question.id as keyof typeof questionPdfMetadata] ?? null;
+function getQuestionPdfUrl(question: QuestionBankItem) {
+  return question.cropPath ? `/api/question-pdf/${question.cropPath}` : null;
 }
 
-function getQuestionPdfUrl(question: QuestionWithPdf) {
-  return `/api/question-pdf/${question.pdf.cropPath}`;
-}
-
-export function QuestionBankClient({ questions }: { questions: Question[] }) {
-  const pdfQuestions = useMemo<QuestionWithPdf[]>(() => {
-    return questions
-      .map((question) => {
-        const pdf = getQuestionPdfMetadata(question);
-        return pdf ? ({ ...question, pdf } satisfies QuestionWithPdf) : null;
-      })
-      .filter((question): question is QuestionWithPdf => Boolean(question));
-  }, [questions]);
-  const subjects = useMemo(() => sortSubjects(Array.from(new Set(pdfQuestions.map((question) => question.pdf.subject)))), [pdfQuestions]);
+export function QuestionBankClient({ questions }: { questions: QuestionBankItem[] }) {
+  const pdfQuestions = questions;
+  const subjects = useMemo(() => sortSubjects(Array.from(new Set(pdfQuestions.map((question) => question.subject)))), [pdfQuestions]);
   const [progress, setProgress] = useState<QuestionBankProgress>(() => createInitialProgress());
   const [hydrated, setHydrated] = useState(false);
   const { activeIndex, mode, shuffleSalt, subject } = progress;
@@ -142,12 +126,12 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const activeMode = modes.find((item) => item.label === mode) ?? modes[0];
   const subjectCards = useMemo(() => {
     return subjects.map((item) => {
-      const subjectQuestions = pdfQuestions.filter((question) => question.pdf.subject === item);
+      const subjectQuestions = pdfQuestions.filter((question) => question.subject === item);
       return {
         subject: item,
-        subjectMcqs: subjectQuestions.filter((question) => question.pdf.section === "Part II").length,
-        commonMcqs: subjectQuestions.filter((question) => question.pdf.section === "Part I").length,
-        descriptive: subjectQuestions.filter((question) => question.pdf.section === "Part III").length,
+        subjectMcqs: subjectQuestions.filter((question) => question.section === "Part II").length,
+        commonMcqs: subjectQuestions.filter((question) => question.section === "Part I").length,
+        descriptive: subjectQuestions.filter((question) => question.section === "Part III").length,
       };
     });
   }, [pdfQuestions, subjects]);
@@ -155,8 +139,8 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const filtered = useMemo(() => {
     return pdfQuestions
       .filter((question) => {
-        const matchesMode = question.pdf.section === activeMode.section;
-        const matchesSubject = mode === "Common MCQs" || subject === "All" || question.pdf.subject === subject;
+        const matchesMode = question.section === activeMode.section;
+        const matchesSubject = mode === "Common MCQs" || subject === "All" || question.subject === subject;
         return matchesMode && matchesSubject;
       })
       .sort((a, b) => hashQuestion(a.id, shuffleSalt) - hashQuestion(b.id, shuffleSalt));
@@ -167,6 +151,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
   const selectedAnswer = active ? (progress.answers[active.id] ?? null) : null;
   const showSolution = active ? Boolean(progress.revealed[active.id]) : false;
   const activePdfUrl = active ? getQuestionPdfUrl(active) : null;
+  const hasCrop = Boolean(active?.cropPath);
   const activeWrittenSolution = active ? (progress.writtenSolutions[active.id] ?? "") : "";
   const answeredInFiltered = filtered.filter((question) => progress.answers[question.id] !== undefined && progress.answers[question.id] !== null).length;
   const revealedInFiltered = filtered.filter((question) => progress.revealed[question.id]).length;
@@ -323,7 +308,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                   )}
                 >
                   All subjects
-                  <span>{pdfQuestions.filter((question) => question.pdf.section === activeMode.section).length}</span>
+                  <span>{pdfQuestions.filter((question) => question.section === activeMode.section).length}</span>
                 </button>
                 {subjectCards.map((card) => {
                   const visibleCount = mode === "Subject MCQs" ? card.subjectMcqs : card.descriptive;
@@ -403,14 +388,14 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                   Question {visibleActiveIndex + 1} of {filtered.length}
                 </p>
                 <h3 className="mt-2 text-base font-black text-charcoal">
-                  {active.pdf.subject} {active.pdf.year}
+                  {active.subject} {active.year}
                 </h3>
                 <p className="mt-1 text-sm font-semibold text-charcoal/60">
-                  {active.pdf.section} | Question {active.pdf.displayNumber}
+                  {active.section} | Question {active.displayNumber}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 lg:justify-end">
-                {[active.pdf.type].filter(Boolean).map((tag, index) => (
+                {[active.type].filter(Boolean).map((tag, index) => (
                   <Badge key={`${tag}-${index}`} className="bg-white">
                     {tag}
                   </Badge>
@@ -419,31 +404,44 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
             </div>
 
             <div className="py-4 sm:py-6">
-              {active.pdf.type === "MCQ" ? (
+              {!hasCrop ? (
+                <div className="mx-auto max-w-4xl space-y-4 rounded-md border border-navy/10 bg-white p-4 sm:p-6">
+                  <p className="whitespace-pre-line text-base font-semibold leading-7 text-charcoal">{active.prompt}</p>
+                  {active.figure ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={active.figure} alt={`Diagram for question ${active.displayNumber}`} className="max-h-[520px] w-full rounded-md object-contain" />
+                  ) : null}
+                </div>
+              ) : active.type === "MCQ" ? (
                 <QuestionImage
-                  title={`Question ${active.pdf.displayNumber}`}
+                  title={`Question ${active.displayNumber}`}
                   url={activePdfUrl}
-                  unavailableMessage="Extracted question image is not available yet. The 2025 camera-scan papers are excluded from the extraction set."
+                  unavailableMessage="Extracted question image is not available yet."
                 />
               ) : (
                 <PdfViewer
-                  title={`Question ${active.pdf.displayNumber} PDF`}
+                  title={`Question ${active.displayNumber} PDF`}
                   url={activePdfUrl}
-                  unavailableMessage="Extracted PDF is not available for this question yet. The 2025 camera-scan papers are excluded from the extraction set."
+                  unavailableMessage="Extracted PDF is not available for this question yet."
                 />
               )}
             </div>
 
-            {active.pdf.type === "MCQ" ? (
+            {active.type === "MCQ" ? (
               <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2.5 sm:gap-3">
                 {["A", "B", "C", "D"].map((label, index) => (
                   <button
                     key={`${active.id}-${index}`}
                     onClick={() => chooseAnswer(index)}
                     type="button"
-                    className={cn("flex min-h-16 items-center justify-center rounded-md border px-3 py-3 text-center text-xl font-black leading-6 transition sm:min-h-18 sm:px-4 sm:text-2xl", optionTone(active, index, selectedAnswer))}
+                    className={cn(
+                      "flex min-h-16 items-center justify-center gap-3 rounded-md border px-3 py-3 text-center font-black leading-6 transition sm:min-h-18 sm:px-4",
+                      !hasCrop && active.options[index] ? "justify-start text-left text-base" : "text-xl sm:text-2xl",
+                      optionTone(active, index, selectedAnswer),
+                    )}
                   >
-                    {label}
+                    <span>{label}</span>
+                    {!hasCrop && active.options[index] ? <span className="font-semibold">{active.options[index]}</span> : null}
                   </button>
                 ))}
               </div>
@@ -484,7 +482,7 @@ export function QuestionBankClient({ questions }: { questions: Question[] }) {
                     </a>
                   </span>
                 ) : (
-                  "PDF unavailable"
+                  `Question text from the NSTC ${active.year} paper`
                 )}
               </p>
               <button
