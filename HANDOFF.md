@@ -16,9 +16,7 @@ Fill `.env.local` with Supabase values and a strong `CONTENT_REVALIDATION_SECRET
 ## 2. Verify Locally
 
 ```bash
-npm run typecheck
-npm run lint
-npm run build
+npm run verify
 npm run dev
 ```
 
@@ -26,10 +24,10 @@ Open `http://localhost:3000`.
 
 ## 3. Supabase
 
-1. Run all SQL migrations in `supabase/migrations` in filename order.
+1. Apply migrations with `supabase db push` (or run each file in `supabase/migrations` once, in filename order).
 2. Confirm buckets exist: `content-assets`, `resource-files`, `paper-assets`, `question-pdfs`.
 3. Add an owner row to `admin_members`.
-4. Configure Auth email templates so OTP emails include `{{ .Token }}`.
+4. Configure Auth email templates so OTP emails include `{{ .Token }}`, and disable public sign-ups.
 5. Seed content with `npm run db:seed` or generated SQL from `npm run db:seed:sql`.
 
 ## 4. Question PDFs
