@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,13 +20,21 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://pakistanolympiads.com"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Pakistan Olympiads",
     template: "%s | Pakistan Olympiads",
   },
   description:
     "A premium open-source learning platform for Pakistan's science olympiad community.",
+  openGraph: {
+    type: "website",
+    siteName: "Pakistan Olympiads",
+    locale: "en_PK",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

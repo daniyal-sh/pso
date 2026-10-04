@@ -70,4 +70,3 @@ export function ModeratorAccessForm({ member }: { member?: ModeratorAdminItem | 
   );
 }
 
-export const ContributorRoleForm = ModeratorAccessForm;

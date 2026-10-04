@@ -424,7 +424,7 @@ export async function getAdminResourceItem(id?: string, context?: AdminContext) 
   } satisfies ResourceAdminItem;
 }
 
-export async function uploadResourceFileToStorage(subject: string, resourceId: string, fileValue: FormDataEntryValue | null | undefined) {
+async function uploadResourceFileToStorage(subject: string, resourceId: string, fileValue: FormDataEntryValue | null | undefined) {
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase service role is not configured.");
   if (!isUploadFile(fileValue)) throw new Error("Choose a PDF, PNG, JPEG, or WEBP file to upload.");

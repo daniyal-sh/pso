@@ -80,13 +80,3 @@ export function getAllGuides() {
     })
     .sort((a, b) => Number(b.featured) - Number(a.featured) || a.title.localeCompare(b.title));
 }
-
-export function getGuideBySlug(slug: string) {
-  const filePath = path.join(guidesDirectory, `${slug}.mdx`);
-  if (!fs.existsSync(filePath)) return null;
-  return coerceGuide(slug, fs.readFileSync(filePath, "utf8"));
-}
-
-export function getGuideSlugs() {
-  return getAllGuides().map((guide) => guide.slug);
-}
