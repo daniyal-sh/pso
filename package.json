@@ -9,14 +9,14 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "audit:prod": "npm audit --omit=dev",
-    "verify": "npm run typecheck && npm run lint && npm run build && npm run audit:prod",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run audit:prod",
     "db:seed": "tsx scripts/seed_supabase_content.ts",
-    "db:seed:sql": "tsx scripts/generate_supabase_seed_sql.ts"
+    "db:seed:sql": "tsx scripts/generate_supabase_seed_sql.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
-    "@uiw/react-md-editor": "^4.1.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
     "next": "^16.3.8",
@@ -25,6 +25,7 @@
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "rehype-sanitize": "^6.0.0",
+    "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
     "zod": "^4.4.3"
@@ -36,11 +37,13 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^16.3.8",
+    "postcss": "8.5.26",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   },
   "overrides": {
-    "postcss": "8.5.26"
+    "postcss": "$postcss"
   }
 }

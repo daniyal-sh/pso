@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { PdfViewer } from "@/components/interactive/pdf-viewer";
 import { Badge } from "@/components/sections/common";
@@ -18,15 +19,35 @@ type AttemptState = {
   descriptiveSolutionFileName: string;
   activeQuestion: number | null;
   timerSecondsRemaining: number;
-  timerRunning: boolean;
+  /** Epoch ms when a running timer reaches zero; null while paused. */
+  timerEndsAt: number | null;
   submittedAt: string | null;
   updatedAt: string | null;
 };
 
 const PAST_PAPER_TIMER_SECONDS = 3 * 60 * 60;
-const MCQ_NUMBERS = Array.from({ length: 70 }, (_, index) => index + 1);
-const PART_I_NUMBERS = MCQ_NUMBERS.slice(0, 20);
-const PART_II_NUMBERS = MCQ_NUMBERS.slice(20);
+// NSTC papers print 20 common (Part I) and 50 subject (Part II) MCQs. Extracted data can
+// have gaps, so the standard layout is the floor and real question numbers extend it.
+const NSTC_PART_I_LAST = 20;
+const NSTC_MCQ_LAST = 70;
+
+function mcqLayout(questions: Question[]) {
+  const mcqs = questions.filter((question) => question.type === "MCQ");
+  const partILast = Math.max(NSTC_PART_I_LAST, ...mcqs.filter((question) => question.section === "Part I").map((question) => question.number));
+  const mcqLast = Math.max(NSTC_MCQ_LAST, partILast + 1, ...mcqs.map((question) => question.number));
+  const numbers = Array.from({ length: mcqLast }, (_, index) => index + 1);
+  return { numbers, partI: numbers.slice(0, partILast), partII: numbers.slice(partILast), partILast, mcqLast };
+}
+
+// Read the clock outside render; only event handlers and effects call this.
+function currentTime() {
+  return Date.now();
+}
+
+function remainingSeconds(attempt: AttemptState, now: number) {
+  if (attempt.timerEndsAt === null) return attempt.timerSecondsRemaining;
+  return Math.max(0, Math.ceil((attempt.timerEndsAt - now) / 1000));
+}
 const CHOICES: AnswerChoice[] = ["A", "B", "C", "D"];
 
 function formatTime(seconds: number) {
@@ -41,7 +62,7 @@ function storageKey(paperId: string) {
 }
 
 function createEmptyAnswers() {
-  return Object.fromEntries(MCQ_NUMBERS.map((number) => [String(number), null])) as Record<string, AnswerChoice | null>;
+  return {} as Record<string, AnswerChoice | null>;
 }
 
 function createInitialAttempt(paper: PastPaper): AttemptState {
@@ -52,13 +73,13 @@ function createInitialAttempt(paper: PastPaper): AttemptState {
     descriptiveSolutionFileName: "",
     activeQuestion: null,
     timerSecondsRemaining: PAST_PAPER_TIMER_SECONDS,
-    timerRunning: false,
+    timerEndsAt: null,
     submittedAt: null,
     updatedAt: null,
   };
 }
 
-function normalizeAttempt(paper: PastPaper, value: Partial<AttemptState> | null): AttemptState {
+function normalizeAttempt(paper: PastPaper, value: (Partial<AttemptState> & { timerRunning?: boolean }) | null): AttemptState {
   const initial = createInitialAttempt(paper);
   if (!value || value.paperId !== paper.id) return initial;
   return {
@@ -67,7 +88,13 @@ function normalizeAttempt(paper: PastPaper, value: Partial<AttemptState> | null)
     mcqAnswers: { ...initial.mcqAnswers, ...(value.mcqAnswers ?? {}) },
     descriptiveSolutionFileName: typeof value.descriptiveSolutionFileName === "string" ? value.descriptiveSolutionFileName : "",
     timerSecondsRemaining: Math.max(0, value.timerSecondsRemaining ?? PAST_PAPER_TIMER_SECONDS),
-    timerRunning: Boolean(value.timerRunning && (value.timerSecondsRemaining ?? 0) > 0),
+    // Older saves stored a running flag; resume those from the saved remaining time.
+    timerEndsAt:
+      typeof value.timerEndsAt === "number"
+        ? value.timerEndsAt
+        : value.timerRunning && (value.timerSecondsRemaining ?? 0) > 0
+          ? Date.now() + (value.timerSecondsRemaining ?? 0) * 1000
+          : null,
   };
 }
 
@@ -88,6 +115,12 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
   const [attempt, setAttempt] = useState<AttemptState>(() => createInitialAttempt(paper));
   const [hydrated, setHydrated] = useState(false);
   const [section, setSection] = useState<WorkspaceSection>("part-i");
+  const router = useRouter();
+  const [now, setNow] = useState(currentTime);
+  const layout = useMemo(() => mcqLayout(questions), [questions]);
+  const MCQ_NUMBERS = layout.numbers;
+  const timerRunning = attempt.timerEndsAt !== null;
+  const timerSeconds = remainingSeconds(attempt, now);
 
   const answeredCount = MCQ_NUMBERS.filter((number) => attempt.mcqAnswers[String(number)]).length;
   const progress = Math.round((answeredCount / MCQ_NUMBERS.length) * 100);
@@ -108,7 +141,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
     return map;
   }, [questions]);
 
-  const visibleNumbers = section === "part-i" ? PART_I_NUMBERS : PART_II_NUMBERS;
+  const visibleNumbers = section === "part-i" ? layout.partI : layout.partII;
   const verifiedCount = answerKeyByQuestion.size;
   const correctCount = MCQ_NUMBERS.filter((number) => {
     const correct = answerKeyByQuestion.get(number);
@@ -134,21 +167,31 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
     window.localStorage.setItem(storageKey(paper.id), JSON.stringify({ ...attempt, updatedAt: new Date().toISOString() }));
   }, [attempt, hydrated, paper.id]);
 
+  // The countdown is derived from a deadline, so throttled background tabs and reloads
+  // never slow it down; the interval only refreshes the display.
   useEffect(() => {
-    if (!attempt.timerRunning || attempt.timerSecondsRemaining <= 0) return;
-    const id = window.setInterval(() => {
-      setAttempt((previous) => {
-        const nextSeconds = Math.max(0, previous.timerSecondsRemaining - 1);
-        return {
-          ...previous,
-          timerSecondsRemaining: nextSeconds,
-          timerRunning: nextSeconds > 0,
-          updatedAt: new Date().toISOString(),
-        };
-      });
-    }, 1000);
+    if (attempt.timerEndsAt === null) return;
+    const id = window.setInterval(() => setNow(currentTime()), 500);
     return () => window.clearInterval(id);
-  }, [attempt.timerRunning, attempt.timerSecondsRemaining]);
+  }, [attempt.timerEndsAt]);
+
+  useEffect(() => {
+    if (attempt.timerEndsAt === null || timerSeconds > 0) return;
+    const id = window.setTimeout(() => {
+      setAttempt((previous) => ({ ...previous, timerEndsAt: null, timerSecondsRemaining: 0, updatedAt: new Date().toISOString() }));
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [attempt.timerEndsAt, timerSeconds]);
+
+  function toggleTimer() {
+    const current = currentTime();
+    setNow(current);
+    updateAttempt((previous) => {
+      const remaining = remainingSeconds(previous, current);
+      if (previous.timerEndsAt !== null) return { ...previous, timerEndsAt: null, timerSecondsRemaining: remaining };
+      return remaining > 0 ? { ...previous, timerEndsAt: current + remaining * 1000 } : previous;
+    });
+  }
 
   function updateAttempt(update: (previous: AttemptState) => AttemptState) {
     setAttempt((previous) => ({ ...update(previous), updatedAt: new Date().toISOString() }));
@@ -190,7 +233,8 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
     if (isReviewing) return;
     updateAttempt((previous) => ({
       ...previous,
-      timerRunning: false,
+      timerSecondsRemaining: remainingSeconds(previous, currentTime()),
+      timerEndsAt: null,
       submittedAt: new Date().toISOString(),
     }));
   }
@@ -203,7 +247,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
   }
 
   function switchPaper(id: string) {
-    window.location.href = `/past-papers/${id}`;
+    router.push(`/past-papers/${id}`);
   }
 
   return (
@@ -229,20 +273,20 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase text-charcoal/60">Timer</p>
-                <p className={cn("font-mono text-3xl font-black", attempt.timerSecondsRemaining === 0 ? "text-red-600" : "text-charcoal")}>{formatTime(attempt.timerSecondsRemaining)}</p>
+                <p className={cn("font-mono text-3xl font-black", timerSeconds === 0 ? "text-red-600" : "text-charcoal")}>{formatTime(timerSeconds)}</p>
               </div>
               <div className="flex gap-2">
                 <button
-                  className={cn("flex h-11 w-11 items-center justify-center rounded-md text-white", attempt.timerRunning ? "bg-navy" : "bg-emerald")}
-                  onClick={() => updateAttempt((previous) => ({ ...previous, timerRunning: !previous.timerRunning && previous.timerSecondsRemaining > 0 }))}
+                  className={cn("flex h-11 w-11 items-center justify-center rounded-md text-white", timerRunning ? "bg-navy" : "bg-emerald")}
+                  onClick={toggleTimer}
                   type="button"
-                  aria-label={attempt.timerRunning ? "Pause timer" : "Start timer"}
+                  aria-label={timerRunning ? "Pause timer" : "Start timer"}
                 >
-                  <Icon name={attempt.timerRunning ? "pause" : "play"} className="h-5 w-5" />
+                  <Icon name={timerRunning ? "pause" : "play"} className="h-5 w-5" />
                 </button>
                 <button
                   className="flex h-11 w-11 items-center justify-center rounded-md border border-navy/10 bg-white text-charcoal"
-                  onClick={() => updateAttempt((previous) => ({ ...previous, timerRunning: false, timerSecondsRemaining: PAST_PAPER_TIMER_SECONDS }))}
+                  onClick={() => updateAttempt((previous) => ({ ...previous, timerEndsAt: null, timerSecondsRemaining: PAST_PAPER_TIMER_SECONDS }))}
                   type="button"
                   aria-label="Reset timer"
                 >
@@ -252,7 +296,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
             </div>
             <div className="mt-3 rounded-md border border-navy/10 bg-white px-3 py-2">
               <div className="flex items-center justify-between text-sm font-black text-charcoal">
-                <span>{answeredCount} / 70 MCQs</span>
+                <span>{answeredCount} / {layout.mcqLast} MCQs</span>
                 <span>{progress}%</span>
               </div>
               <div className="mt-2 h-2 rounded-full bg-cool">
@@ -317,7 +361,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
                 <h2 className="flex items-center gap-2 text-sm font-black uppercase text-charcoal">
                   <Icon name="clipboard-check" className="h-5 w-5 text-emerald" /> Answer Workspace
                 </h2>
-                <p className="mt-1 text-xs font-bold text-charcoal/60">70 MCQs plus one descriptive response.</p>
+                <p className="mt-1 text-xs font-bold text-charcoal/60">{layout.mcqLast} MCQs plus one descriptive response.</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 {isReviewing ? (
@@ -335,7 +379,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
               <div className="mt-4 rounded-md border border-gold/30 bg-gold/10 p-3">
                 <p className="text-sm font-black text-charcoal">Submitted {formatSavedAt(attempt.submittedAt)}</p>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  <ReviewStat label="Answered" value={`${answeredCount}/70`} />
+                  <ReviewStat label="Answered" value={`${answeredCount}/${layout.mcqLast}`} />
                   <ReviewStat label="Verified" value={verifiedCount.toString()} />
                   <ReviewStat label="Correct" value={verifiedCount ? `${correctCount}/${verifiedCount}` : "-"} />
                 </div>
@@ -345,8 +389,8 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
             ) : null}
 
             <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-md border border-navy/10 bg-white">
-              <SectionButton active={section === "part-i"} label="Part I" count="1-20" onClick={() => setSection("part-i")} />
-              <SectionButton active={section === "part-ii"} label="Part II" count="21-70" onClick={() => setSection("part-ii")} />
+              <SectionButton active={section === "part-i"} label="Part I" count={`1-${layout.partILast}`} onClick={() => setSection("part-i")} />
+              <SectionButton active={section === "part-ii"} label="Part II" count={`${layout.partILast + 1}-${layout.mcqLast}`} onClick={() => setSection("part-ii")} />
               <SectionButton active={section === "descriptive"} label="Descriptive" count="Long" onClick={() => setSection("descriptive")} />
             </div>
 
@@ -451,7 +495,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
                     key={number}
                     type="button"
                     onClick={() => {
-                      setSection(number <= 20 ? "part-i" : "part-ii");
+                      setSection(number <= layout.partILast ? "part-i" : "part-ii");
                       focusQuestion(number);
                     }}
                     className={cn(
@@ -507,7 +551,7 @@ export function PastPaperWorkspace({ paper, questions, papers }: { paper: PastPa
         <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center gap-2">
           <div className="text-center">
             <p className="text-xs font-black">{paper.subject} {paper.year}</p>
-            <p className="text-[11px] text-white/70">{answeredCount}/70 answered</p>
+            <p className="text-[11px] text-white/70">{answeredCount}/{layout.mcqLast} answered</p>
           </div>
           <a href="#answer-workspace" className="rounded-md border border-white/15 px-3 py-2 text-xs font-black">
             Answers

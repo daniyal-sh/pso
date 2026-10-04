@@ -25,7 +25,7 @@ export default async function PastPaperDetailPage({ params }: { params: Promise<
   return (
     <section className="py-4 md:py-6">
       <Container>
-        <PastPaperWorkspace paper={paper} questions={paperQuestions} papers={pastPapers} />
+        <PastPaperWorkspace key={paper.id} paper={paper} questions={paperQuestions} papers={pastPapers} />
       </Container>
     </section>
   );

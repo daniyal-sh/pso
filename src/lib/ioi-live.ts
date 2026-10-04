@@ -45,7 +45,8 @@ type OfficialSubmission = {
 
 async function getOfficialJson<T>(path: string): Promise<T> {
   const response = await fetch(`${OFFICIAL_RESULTS_URL}${path}`, {
-    cache: "no-store",
+    // Share upstream responses across visitors; a failed refresh keeps serving the last good copy.
+    next: { revalidate: 60 },
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(8_000),
   });

@@ -53,6 +53,24 @@ export type Question = {
   figure: string;
 };
 
+/** Slim question shape sent to the question bank client. */
+export type QuestionBankItem = {
+  id: string;
+  subject: string;
+  year: number;
+  section: string;
+  type: "MCQ" | "Long";
+  displayNumber: string;
+  answer: number | null;
+  solution: string;
+  /** Path inside the question-pdfs bucket, when an extracted crop exists. */
+  cropPath: string | null;
+  /** Text fallback for questions without an extracted crop. */
+  prompt: string;
+  options: string[];
+  figure: string;
+};
+
 export function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

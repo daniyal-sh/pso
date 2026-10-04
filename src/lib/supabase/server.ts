@@ -73,14 +73,17 @@ export function getSupabasePublicClient() {
 export async function selectAllRows<Row>(
   buildQuery: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: { message: string } | null }>,
   pageSize = 1000,
+  maxPages = 50,
 ) {
   const rows: Row[] = [];
-  for (let from = 0; ; from += pageSize) {
+  for (let page = 0; page < maxPages; page += 1) {
+    const from = page * pageSize;
     const { data, error } = await buildQuery(from, from + pageSize - 1);
     if (error) return { data: null, error };
     rows.push(...(data ?? []));
     if (!data || data.length < pageSize) return { data: rows, error: null };
   }
+  return { data: null, error: { message: `Result exceeded ${maxPages * pageSize} rows; refusing to load more.` } };
 }
 
 export function getSupabaseServiceClient() {

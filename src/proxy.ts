@@ -2,14 +2,29 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const isDev = process.env.NODE_ENV !== "production";
 
+// Storage and question PDFs redirect to the Supabase project, so allow its exact origin even
+// when it is not a *.supabase.co host (custom domain or local stack).
+function supabaseOrigins() {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    const ws = url.protocol === "https:" ? "wss:" : "ws:";
+    return { http: ` ${url.origin}`, ws: ` ${ws}//${url.host}` };
+  } catch {
+    return { http: "", ws: "" };
+  }
+}
+
+const supabase = supabaseOrigins();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com",
+  `img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com${supabase.http}`,
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-  "media-src 'self' blob: https://*.supabase.co",
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabase.http}${supabase.ws}`,
+  `media-src 'self' blob: https://*.supabase.co${supabase.http}`,
+  "worker-src 'self' blob:",
   "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://www.desmos.com",
   "object-src 'none'",
   "base-uri 'self'",

@@ -37,7 +37,11 @@ export function IoiLiveTracker({ initialSnapshot }: { initialSnapshot: IoiLiveSn
   const [selectedDay, setSelectedDay] = useState<"day1" | "day2">(() => initialDay(initialSnapshot));
   const [connection, setConnection] = useState<"live" | "reconnecting">("live");
 
+  // Once both contest days are over the results are final, so stop polling.
+  const finished = snapshot.days.every((item) => item.status === "complete" && item.problems.length > 0);
+
   useEffect(() => {
+    if (finished) return;
     let active = true;
     const refresh = async () => {
       try {
@@ -57,7 +61,7 @@ export function IoiLiveTracker({ initialSnapshot }: { initialSnapshot: IoiLiveSn
       active = false;
       window.clearInterval(interval);
     };
-  }, []);
+  }, [finished]);
 
   const day = snapshot.days.find((item) => item.id === selectedDay) ?? snapshot.days[0];
 

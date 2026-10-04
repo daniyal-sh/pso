@@ -89,14 +89,14 @@ export function PageHero({
 }) {
   const isHome = variant === "home";
   const heroBackgrounds = {
-    guides: "/generated/inner-hero-guides-resources.png",
-    "question-bank": "/generated/inner-hero-practice-papers.png",
-    alumni: "/generated/inner-hero-alumni-blog.png",
-    blog: "/generated/inner-hero-alumni-blog.png",
-    olympiads: "/generated/inner-hero-olympiads-general.png",
-    compact: "/generated/inner-hero-olympiads-general.png",
+    guides: "/generated/inner-hero-guides-resources.webp",
+    "question-bank": "/generated/inner-hero-practice-papers.webp",
+    alumni: "/generated/inner-hero-alumni-blog.webp",
+    blog: "/generated/inner-hero-alumni-blog.webp",
+    olympiads: "/generated/inner-hero-olympiads-general.webp",
+    compact: "/generated/inner-hero-olympiads-general.webp",
   } as const;
-  const backgroundImage = variant === "home" ? "/generated/science-hero-no-people.png" : heroBackgrounds[variant];
+  const backgroundImage = variant === "home" ? "/generated/science-hero-no-people.webp" : heroBackgrounds[variant];
 
   return (
     <section className="relative overflow-hidden bg-navy text-white">

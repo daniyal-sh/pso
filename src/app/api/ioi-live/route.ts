@@ -5,7 +5,7 @@ export async function GET() {
     const snapshot = await getIoiLiveSnapshot();
     return Response.json(snapshot, {
       headers: {
-        "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=30",
+        "Cache-Control": "public, max-age=15, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch (error) {
